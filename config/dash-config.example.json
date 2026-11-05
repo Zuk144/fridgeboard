@@ -1,0 +1,4 @@
+{
+  "endpointUrl": "https://script.google.com/macros/s/PASTE_THE_DEPLOYMENT_ID/exec",
+  "key": "PASTE_THE_64_CHARACTER_KEY_FROM_showKey"
+}

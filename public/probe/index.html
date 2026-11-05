@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fridgeboard probe</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&amp;family=Patrick+Hand&amp;family=Cabin+Sketch:wght@700&amp;family=Fredoka:wght@600&amp;family=Kalam:wght@700&amp;family=Permanent+Marker&amp;display=swap">
+<style>
+  /* Plain, old-browser CSS only: this page has to run on whatever the fridge has. */
+  html, body { margin: 0; background: #15181b; color: #eef0f2; font-family: Arial, Helvetica, sans-serif; }
+  .wrap { padding: 28px 36px 60px; }
+  h1 { font-size: 60px; line-height: 68px; margin: 0; }
+  .sub { font-size: 26px; color: #aab2ba; margin: 6px 0 20px; }
+  #state { display: inline-block; font-size: 30px; font-weight: bold; padding: 6px 18px; border-radius: 8px; background: #3a3f45; }
+  #state.done { background: #1f7a4d; }
+  h2 { font-size: 40px; margin: 36px 0 12px; }
+  #results { background: #ffffff; color: #000000; font-family: "Courier New", Courier, monospace; font-size: 24px; line-height: 31px; padding: 20px 22px; margin: 16px 0 0; white-space: pre-wrap; word-wrap: break-word; border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 28px; }
+  td { padding: 10px 10px; border-bottom: 1px solid #30353b; vertical-align: top; }
+  td.k { width: 34%; color: #aab2ba; }
+  .ok { color: #5be37d; font-weight: bold; }
+  .bad { color: #ff6b5e; font-weight: bold; }
+  .warn { color: #f7c948; font-weight: bold; }
+  .sw { display: inline-block; vertical-align: top; width: 300px; height: 190px; margin: 0 24px 24px 0; position: relative; background: #2b3035; border-radius: 6px; overflow: hidden; }
+  .sw .lbl { position: absolute; left: 10px; bottom: 8px; font-size: 22px; color: #cfd5da; }
+  .font { font-size: 44px; line-height: 60px; margin: 4px 0; }
+  .font span { font-family: Arial, sans-serif; font-size: 22px; color: #aab2ba; margin-left: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fridgeboard probe</h1>
+  <div class="sub">Open this on the fridge, wait for DONE, then take a photo of the white box. Scroll down for the look tests.</div>
+  <div id="state">Running...</div>
+
+  <pre id="results">starting...</pre>
+
+  <h2>Look tests (photo these too)</h2>
+  <div class="font" style="font-family:'Caveat',cursive">Caveat 3:40 Sunday <span>(paper)</span></div>
+  <div class="font" style="font-family:'Patrick Hand',cursive">Patrick Hand Piano lesson <span>(paper)</span></div>
+  <div class="font" style="font-family:'Cabin Sketch',cursive;font-weight:700">Cabin Sketch 3:40 Today <span>(chalk)</span></div>
+  <div class="font" style="font-family:'Fredoka',sans-serif;font-weight:600">Fredoka 3:40 Steelers <span>(magnets)</span></div>
+  <div class="font" style="font-family:'Kalam',cursive;font-weight:700">Kalam Taco night <span>(magnets)</span></div>
+  <div class="font" style="font-family:'Permanent Marker',cursive">Permanent Marker Nov 15 <span>(magnets)</span></div>
+
+  <div style="margin-top:20px">
+    <div class="sw"><div style="position:absolute;left:30px;top:40px;width:240px;height:70px;background:#ffb612;-webkit-transform:rotate(-3deg);transform:rotate(-3deg);-webkit-clip-path:polygon(2% 0,98% 4%,100% 30%,98% 60%,100% 100%,0 96%,2% 60%,0 30%);clip-path:polygon(2% 0,98% 4%,100% 30%,98% 60%,100% 100%,0 96%,2% 60%,0 30%)"></div><div class="lbl">1 tape: jagged ends</div></div>
+    <div class="sw"><div style="position:absolute;left:30px;top:40px;width:240px;height:80px;background:#ffb612;-webkit-mask-image:radial-gradient(circle at 0 50%,transparent 18px,#000 19px);mask-image:radial-gradient(circle at 0 50%,transparent 18px,#000 19px)"></div><div class="lbl">2 ticket: notch at left</div></div>
+    <div class="sw"><div style="position:absolute;left:30px;top:44px;font-size:48px;color:#a6e0af;-webkit-filter:blur(1.5px);filter:blur(1.5px)">erased</div><div class="lbl">3 blur: soft text</div></div>
+    <div class="sw"><svg width="300" height="150" style="position:absolute;left:0;top:0"><filter id="pgrain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"></feTurbulence><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.4 -0.4"></feColorMatrix></filter><rect width="300" height="150" filter="url(#pgrain)"></rect></svg><div class="lbl">4 grain: speckle</div></div>
+    <div class="sw" style="background:#f5efe1"><div style="position:absolute;left:60px;top:26px;width:170px;height:110px;background:#ffe66e;-webkit-transform:rotate(3deg);transform:rotate(3deg);box-shadow:0 14px 18px -10px rgba(0,0,0,.6)"></div><div class="lbl" style="color:#333">5 sticky: tilt + shadow</div></div>
+    <div class="sw"><div style="position:absolute;left:40px;top:30px;font-size:110px;line-height:120px;font-family:'Fredoka',sans-serif;font-weight:600;color:#e8392c;text-shadow:0 3px 0 #b5241a,0 6px 0 #8c1912,0 12px 14px rgba(0,0,0,.6)">3</div><div style="position:absolute;left:150px;top:40px;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6aa8ff,#2563d9 60%,#173f94);box-shadow:0 6px 8px rgba(0,0,0,.45)"></div><div class="lbl">6 magnet: 3D + shine</div></div>
+  </div>
+
+  <h2>Details</h2>
+  <table id="detail"><tbody></tbody></table>
+</div>
+
+<script>
+// ES5 only, on purpose: this page must run (and report) on an old browser.
+(function () {
+  var R = {}, order = [], pending = 1, finished = false; // 1 = the sync section, closed by the last end()
+  var pre = document.getElementById('results');
+  var tbody = document.getElementById('detail').getElementsByTagName('tbody')[0];
+  var stateEl = document.getElementById('state');
+  var params = parseQuery(location.search);
+
+  function parseQuery(q) {
+    var out = {}, parts = q.replace(/^\?/, '').split('&');
+    for (var i = 0; i < parts.length; i++) {
+      if (!parts[i]) continue;
+      var kv = parts[i].split('=');
+      out[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
+    }
+    return out;
+  }
+  function now() { return (window.performance && performance.now) ? performance.now() : new Date().getTime(); }
+  function pad(s, n) { s = String(s); while (s.length < n) s += ' '; return s; }
+
+  function set(k, v, cls) {
+    if (!R.hasOwnProperty(k)) order.push(k);
+    R[k] = { v: String(v), c: cls || '' };
+    render();
+  }
+  function render() {
+    var txt = '', rows = '';
+    for (var i = 0; i < order.length; i++) {
+      var k = order[i], r = R[k];
+      txt += pad(k, 16) + r.v + '\n';
+      rows += '<tr><td class="k">' + esc(k) + '</td><td class="' + r.c + '">' + esc(r.v) + '</td></tr>';
+    }
+    pre.textContent = txt;
+    tbody.innerHTML = rows;
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function start() { pending++; }
+  function end() {
+    pending--;
+    if (pending <= 0 && !finished) {
+      finished = true;
+      stateEl.className = 'done';
+      stateEl.textContent = 'DONE  ' + new Date().toString().slice(0, 24);
+    }
+  }
+  function pf(ok) { return ok ? 'ok' : 'bad'; }
+  function yes(b) { return b ? 'yes' : 'NO'; }
+
+  // ---------- screen ----------
+  set('probe', 'v1  ' + new Date().toISOString());
+  set('ua', navigator.userAgent);
+  set('viewport', window.innerWidth + ' x ' + window.innerHeight);
+  set('screen', screen.width + ' x ' + screen.height + '  (avail ' + screen.availWidth + ' x ' + screen.availHeight + ')');
+  set('dpr', window.devicePixelRatio || 1);
+  var orient = window.innerHeight >= window.innerWidth ? 'portrait' : 'landscape';
+  if (screen.orientation && screen.orientation.type) orient += '  (' + screen.orientation.type + ')';
+  set('orientation', orient);
+  set('touch', 'touchstart ' + yes('ontouchstart' in window) + ' · pointer ' + yes(!!window.PointerEvent) + ' · maxTouch ' + (navigator.maxTouchPoints || 0));
+  set('secure', yes(window.isSecureContext !== false && location.protocol === 'https:'), pf(location.protocol === 'https:'));
+
+  // ---------- JS ----------
+  function syntax(src) { try { new Function(src); return true; } catch (e) { return false; } }
+  var es6 = syntax('let a=1; const f=()=>a; class C{}; return `x${f()}`;');
+  var es17 = syntax('async function f(){ await 1; }');
+  var es18 = syntax('var o={...{a:1}};');
+  var es20 = syntax('var a=null; return a?.b ?? 1;');
+  set('js', 'es2015 ' + yes(es6) + ' · async ' + yes(es17) + ' · spread ' + yes(es18) + ' · ?. ' + yes(es20), pf(es6));
+  set('promise/fetch', 'Promise ' + yes(!!window.Promise) + ' · fetch ' + yes(!!window.fetch) + ' · TextEncoder ' + yes(!!window.TextEncoder), pf(!!window.Promise && !!window.fetch));
+
+  // ---------- storage ----------
+  try {
+    localStorage.setItem('__fb_probe', '1');
+    var got = localStorage.getItem('__fb_probe');
+    localStorage.removeItem('__fb_probe');
+    set('localStorage', got === '1' ? 'PASS' : 'FAIL', pf(got === '1'));
+  } catch (e) { set('localStorage', 'FAIL ' + e.message, 'bad'); }
+
+  // ---------- CSS ----------
+  function sup(p, v) {
+    if (window.CSS && CSS.supports) { try { return CSS.supports(p, v); } catch (e) { return false; } }
+    var d = document.createElement('div'); d.style.cssText = p + ':' + v; return !!d.style.length;
+  }
+  function gridWorks() {
+    var d = document.createElement('div');
+    d.style.cssText = 'display:grid;grid-template-columns:10px 10px;position:absolute;left:-999px;top:0';
+    var a = document.createElement('div'), b = document.createElement('div');
+    a.style.height = b.style.height = '5px';
+    d.appendChild(a); d.appendChild(b); document.body.appendChild(d);
+    var ok = b.offsetLeft - a.offsetLeft === 10 && b.offsetTop === a.offsetTop;
+    document.body.removeChild(d); return ok;
+  }
+  function flexGapWorks() {
+    var d = document.createElement('div');
+    d.style.cssText = 'display:flex;flex-direction:column;row-gap:1px;position:absolute;left:-999px;top:0';
+    d.appendChild(document.createElement('div')); d.appendChild(document.createElement('div'));
+    document.body.appendChild(d);
+    var ok = d.scrollHeight === 1;
+    document.body.removeChild(d); return ok;
+  }
+  var g = gridWorks(), fg = flexGapWorks();
+  set('css grid', g ? 'PASS' : 'FAIL', pf(g));
+  set('flex gap', fg ? 'PASS' : 'no (use margins)', fg ? 'ok' : 'warn');
+  set('css misc', 'vars ' + yes(sup('--a', '0')) +
+    ' · clip-path ' + yes(sup('clip-path', 'polygon(0 0,1px 0,0 1px)') || sup('-webkit-clip-path', 'polygon(0 0,1px 0,0 1px)')) +
+    ' · mask ' + yes(sup('mask-image', 'none') || sup('-webkit-mask-image', 'none')) +
+    ' · filter ' + yes(sup('filter', 'blur(1px)') || sup('-webkit-filter', 'blur(1px)')) +
+    ' · sticky ' + yes(sup('position', 'sticky')) +
+    ' · object-fit ' + yes(sup('object-fit', 'cover')));
+
+  // ---------- Intl / time zone ----------
+  try {
+    var fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' });
+    var t = function (iso) { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }).format(new Date(iso)); };
+    // 2026 DST checks: spring forward Mar 8, fall back Nov 1.
+    var springOk = t('2026-03-08T07:30:00Z') === '3:30 AM';
+    var fallOk = t('2026-11-01T06:30:00Z') === '1:30 AM';
+    set('intl NY', fmt.format(new Date()) + ' · DST ' + (springOk && fallOk ? 'PASS' : 'FAIL'), pf(springOk && fallOk));
+    set('intl extra', 'formatToParts ' + yes(typeof Intl.DateTimeFormat.prototype.formatToParts === 'function') +
+      ' · device tz ' + (Intl.DateTimeFormat().resolvedOptions().timeZone || '?'));
+  } catch (e) { set('intl NY', 'FAIL ' + e.message, 'bad'); }
+
+  // ---------- CPU ----------
+  (function () {
+    var t0 = now(), x = 0;
+    for (var i = 0; i < 3000000; i++) { x += Math.sqrt(i) * 0.5; }
+    set('cpu loop', Math.round(now() - t0) + ' ms (laptop is about 10)');
+  })();
+
+  // ---------- async tests ----------
+  function withTimeout(p, ms) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      setTimeout(function () { if (!done) { done = true; reject(new Error('timeout ' + ms + 'ms')); } }, ms);
+      p.then(function (v) { if (!done) { done = true; resolve(v); } }, function (e) { if (!done) { done = true; reject(e); } });
+    });
+  }
+  function bytes(s) {
+    var u = unescape(encodeURIComponent(s)), b = new Uint8Array(u.length);
+    for (var i = 0; i < u.length; i++) b[i] = u.charCodeAt(i);
+    return b;
+  }
+  function str(buf) {
+    var b = new Uint8Array(buf), s = '';
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return decodeURIComponent(escape(s));
+  }
+
+  if (!window.Promise) {
+    set('webcrypto', 'SKIPPED (no Promise)', 'bad');
+    set('network', 'SKIPPED (no Promise)', 'bad');
+    end();
+    return;
+  }
+
+  // WebCrypto: AES-GCM round trip, then PBKDF2 at 150k with timing and key export (we store the derived key).
+  start();
+  (function () {
+    var c = window.crypto || window.msCrypto;
+    var subtle = c && (c.subtle || c.webkitSubtle);
+    if (!subtle) { set('webcrypto', 'MISSING (crypto.subtle)', 'bad'); end(); return; }
+    var iv = c.getRandomValues(new Uint8Array(12));
+    var salt = c.getRandomValues(new Uint8Array(16));
+    var msg = 'hello fridge — ünïcode ok';
+    subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'])
+      .then(function (key) {
+        return subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, bytes(msg)).then(function (ct) {
+          return subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
+        });
+      })
+      .then(function (pt) {
+        var ok = str(pt) === msg;
+        set('aes-gcm', ok ? 'PASS' : 'FAIL (mismatch)', pf(ok));
+        return subtle.importKey('raw', bytes('correct horse battery staple'), { name: 'PBKDF2' }, false, ['deriveKey']);
+      })
+      .then(function (base) {
+        var t0 = now();
+        return subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 150000, hash: 'SHA-256' }, base,
+          { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']).then(function (k) {
+          var ms = Math.round(now() - t0);
+          set('pbkdf2 150k', ms + ' ms', ms < 4000 ? 'ok' : 'warn');
+          return k;
+        });
+      })
+      .then(function (k) {
+        return subtle.exportKey('jwk', k).then(function (jwk) {
+          return subtle.importKey('jwk', jwk, { name: 'AES-GCM' }, false, ['decrypt']).then(function () {
+            set('key store', 'PASS (jwk export/import)', 'ok');
+          });
+        });
+      })
+      ['catch'](function (e) { set('webcrypto', 'FAIL ' + (e && (e.name + ' ' + e.message)), 'bad'); })
+      .then(end, end);
+  })();
+
+  // Fonts: do the handwriting fonts actually load?
+  start();
+  (function () {
+    var names = ['Caveat', 'Patrick Hand', 'Cabin Sketch', 'Fredoka', 'Kalam', 'Permanent Marker'];
+    if (!document.fonts || !document.fonts.load) { set('web fonts', 'no FontFace API (check the samples by eye)', 'warn'); end(); return; }
+    var loads = [];
+    for (var i = 0; i < names.length; i++) {
+      (function (n) {
+        loads.push(withTimeout(document.fonts.load('40px "' + n + '"'), 8000).then(function (list) {
+          return n + (list && list.length ? '' : ' MISSING');
+        }, function () { return n + ' TIMEOUT'; }));
+      })(names[i]);
+    }
+    Promise.all(loads).then(function (res) {
+      var bad = res.join(',').indexOf('MISSING') >= 0 || res.join(',').indexOf('TIMEOUT') >= 0;
+      set('web fonts', bad ? res.join(' · ') : 'PASS (6 of 6)', bad ? 'warn' : 'ok');
+    }).then(end, end);
+  })();
+
+  // Network: same-origin cache-busted GET, text/plain POST (Apps Script style), redirect-following GET.
+  if (!window.fetch) {
+    set('network', 'no fetch: will need XHR fallback', 'warn');
+  } else {
+    var ep = params.ep || 'https://httpbin.org/post';
+    var redir = params.redir || 'https://httpbin.org/redirect-to?url=https%3A%2F%2Fhttpbin.org%2Fget';
+
+    start();
+    withTimeout(fetch(location.href.split('#')[0].split('?')[0] + '?cb=' + new Date().getTime(), { cache: 'no-store' }), 10000)
+      .then(function (r) { set('fetch self', r.ok ? 'PASS ' + r.status : 'FAIL ' + r.status, pf(r.ok)); })
+      ['catch'](function (e) { set('fetch self', 'FAIL ' + e.message, 'bad'); })
+      .then(end, end);
+
+    start();
+    var t1 = now();
+    withTimeout(fetch(ep, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'probe', at: new Date().getTime() }), redirect: 'follow' }), 15000)
+      .then(function (r) { return r.text().then(function (t) { return { r: r, t: t }; }); })
+      .then(function (x) {
+        var json = false; try { JSON.parse(x.t); json = true; } catch (e) {}
+        set('post text/plain', (x.r.ok ? 'PASS ' : 'FAIL ') + x.r.status + (json ? ' json' : ' not-json') + ' · ' + Math.round(now() - t1) + ' ms' + (params.ep ? ' (ep)' : ''), pf(x.r.ok && json));
+      })
+      ['catch'](function (e) { set('post text/plain', 'FAIL ' + e.message, 'bad'); })
+      .then(end, end);
+
+    start();
+    withTimeout(fetch(redir, { redirect: 'follow' }), 15000)
+      .then(function (r) { set('redirect fetch', (r.ok ? 'PASS ' : 'FAIL ') + r.status + (r.redirected ? ' (followed)' : ''), pf(r.ok)); })
+      ['catch'](function (e) { set('redirect fetch', 'FAIL ' + e.message, 'bad'); })
+      .then(end, end);
+  }
+
+  end(); // matches the implicit start of the sync section
+})();
+</script>
+</body>
+</html>

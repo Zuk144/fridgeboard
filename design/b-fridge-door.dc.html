@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fridge door</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Kalam:wght@400;700&amp;family=Permanent+Marker&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#2E3135}
+.fd{position:relative;width:1080px;height:1920px;overflow:hidden;font-family:'Kalam',cursive;color:#1B1F24;background-color:#2E3135;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.028) 0,rgba(255,255,255,.028) 1px,rgba(0,0,0,0) 1px,rgba(0,0,0,0) 3px),repeating-linear-gradient(90deg,rgba(0,0,0,.07) 0,rgba(0,0,0,.07) 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 9px),linear-gradient(90deg,#24272b 0,#3b3f45 26%,#2b2e32 52%,#373b40 78%,#232629 100%)}
+.fd:before{content:"";position:absolute;left:0;top:0;width:1080px;height:1920px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 30%,rgba(0,0,0,0) 70%,rgba(0,0,0,.18))}
+.mag{position:absolute;width:46px;height:46px;border-radius:50%;box-shadow:0 6px 8px rgba(0,0,0,.45),inset 0 -4px 6px rgba(0,0,0,.25);z-index:5}
+.mag:after{content:"";position:absolute;left:10px;top:8px;width:16px;height:10px;border-radius:50%;background:rgba(255,255,255,.55);transform:rotate(-25deg)}
+.m-red{background:radial-gradient(circle at 35% 30%,#ff6b5e,#d1271b 60%,#9a1810)}
+.m-blue{background:radial-gradient(circle at 35% 30%,#6aa8ff,#2563d9 60%,#173f94)}
+.m-green{background:radial-gradient(circle at 35% 30%,#6fe0a0,#1f9a5a 60%,#11683a)}
+.m-yel{background:radial-gradient(circle at 35% 30%,#fff07a,#f2c418 60%,#b58d00)}
+.m-blk{background:radial-gradient(circle at 35% 30%,#6b6f75,#1d1f22 60%,#000)}
+.paper{position:absolute;box-shadow:0 18px 24px -10px rgba(0,0,0,.65),0 2px 4px rgba(0,0,0,.35)}
+.lmag{display:inline-block;font-family:'Fredoka',sans-serif;font-weight:700}
+.marker{font-family:'Permanent Marker',cursive}
+.fred{font-family:'Fredoka',sans-serif}
+.row{position:absolute;left:0;width:650px;height:72px;line-height:72px;font-size:40px;white-space:nowrap}
+.row .t{position:absolute;left:24px;width:118px;text-align:right;font-size:32px;color:#6A6F76}
+.row .n{position:absolute;left:166px}
+.done{opacity:.4}
+.x{background-image:linear-gradient(176deg,rgba(0,0,0,0) 48%,currentColor 48%,currentColor 55%,rgba(0,0,0,0) 55%)}
+.c-zuk{color:#1F57C3}
+.c-fam{color:#1C7A47}
+.wcol{position:absolute;top:0;width:138px;height:330px}
+.wcol .h{height:62px;line-height:62px;text-align:center;font-family:'Fredoka',sans-serif;font-weight:600;font-size:26px;color:#fff;letter-spacing:1px}
+.wcol .num{font-family:'Fredoka',sans-serif;font-weight:600;font-size:44px;line-height:60px;text-align:center;color:#2B3036}
+.wcol .e{font-weight:700;font-size:23px;line-height:30px;padding:0 9px;white-space:nowrap;overflow:hidden}
+.wline{position:absolute;top:62px;width:2px;height:268px;background:#D9DDE2}
+</style>
+</helmet>
+<div class="fd">
+
+<!-- letter magnet clock -->
+<div style="position:absolute;left:52px;top:40px;height:300px;white-space:nowrap">
+<span class="lmag" style="font-size:238px;line-height:300px;color:#E8392C;text-shadow:0 3px 0 #B5241A,0 6px 0 #8C1912,0 14px 16px rgba(0,0,0,.55);transform:rotate(-4deg)">3</span><span class="lmag" style="font-size:200px;line-height:300px;color:#F6C619;text-shadow:0 3px 0 #C99A00,0 6px 0 #9B7600,0 14px 16px rgba(0,0,0,.55);margin:0 6px;vertical-align:14px">:</span><span class="lmag" style="font-size:238px;line-height:300px;color:#2F7BEA;text-shadow:0 3px 0 #1F5BB5,0 6px 0 #164289,0 14px 16px rgba(0,0,0,.55);transform:rotate(3deg)">4</span><span class="lmag" style="font-size:238px;line-height:300px;color:#2DB36A;text-shadow:0 3px 0 #1D8A4F,0 6px 0 #146439,0 14px 16px rgba(0,0,0,.55);transform:rotate(-2deg);margin-left:4px">0</span><span class="lmag" style="font-size:80px;line-height:80px;color:#B46BE8;text-shadow:0 2px 0 #8A45C0,0 4px 0 #6A2F99,0 8px 10px rgba(0,0,0,.5);margin-left:14px;transform:rotate(6deg)">pm</span>
+</div>
+
+<!-- masking tape date -->
+<div style="position:absolute;left:46px;top:346px;width:640px;height:84px;transform:rotate(-1.6deg);background:rgba(236,224,190,.96);background-image:linear-gradient(180deg,rgba(255,255,255,.25),rgba(0,0,0,.04));box-shadow:0 2px 4px rgba(0,0,0,.35);-webkit-clip-path:polygon(1% 0,99% 3%,100% 22%,98.6% 40%,100% 62%,98.8% 80%,99.6% 100%,0.6% 97%,0 76%,1.2% 55%,0 34%,1.4% 16%);clip-path:polygon(1% 0,99% 3%,100% 22%,98.6% 40%,100% 62%,98.8% 80%,99.6% 100%,0.6% 97%,0 76%,1.2% 55%,0 34%,1.4% 16%)">
+<div class="marker" style="position:absolute;left:30px;top:8px;font-size:50px;line-height:70px;color:#1B1F24">Sunday, November 15</div>
+</div>
+<div style="position:absolute;left:58px;top:446px;font-size:23px;color:#C3C8CE">updated 6 min ago</div>
+
+<!-- weather card -->
+<div class="paper" style="left:700px;top:70px;width:336px;height:356px;transform:rotate(2.2deg);background:#FBFAF5;background-image:linear-gradient(180deg,rgba(0,0,0,0) 70px,#E8564A 70px,#E8564A 72px,rgba(0,0,0,0) 72px),repeating-linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 46px,#CFDDF0 46px,#CFDDF0 48px);background-position:0 0,0 72px">
+<div class="mag m-blue" style="left:145px;top:-20px"></div>
+<svg style="position:absolute;left:16px;top:44px" width="104" height="84" viewBox="0 0 140 112" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g stroke="#E3A11B"><circle cx="94" cy="40" r="18"></circle><path d="M94 8v8M124 40h-8M116 18l-6 6M72 18l6 6"></path></g><path d="M28 94h72a18 18 0 0 0 0-36a26 26 0 0 0-48-6a22 22 0 0 0-24 42z" fill="#FBFAF5" stroke="#1B1F24"></path></svg>
+<div style="position:absolute;right:22px;top:20px;font-weight:700;font-size:116px;line-height:130px">48°</div>
+<div style="position:absolute;left:26px;right:20px;top:166px;font-size:31px;line-height:40px;text-align:right">Cloudy · 52° / 39°</div>
+<div class="marker" style="position:absolute;left:0;right:0;top:232px;text-align:center;font-size:33px;line-height:50px;color:#D2281B;transform:rotate(-3deg);white-space:nowrap">Jacket weather</div>
+<svg style="position:absolute;left:44px;top:282px" width="250" height="18" viewBox="0 0 250 18" fill="none" stroke="#D2281B" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M4 12 C 70 2, 170 16, 246 6"></path></svg>
+</div>
+
+<!-- game ticket -->
+<div style="position:absolute;left:40px;top:500px;width:1000px;height:136px;transform:rotate(-1deg);filter:drop-shadow(0 12px 12px rgba(0,0,0,.5))">
+<div style="position:absolute;left:0;top:0;width:1000px;height:136px;background:#FFB612;background-image:linear-gradient(180deg,rgba(255,255,255,.25),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(0,0,0,.035) 0,rgba(0,0,0,.035) 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 6px);border-radius:10px;-webkit-mask-image:radial-gradient(circle at 0 50%,transparent 20px,#000 21px),radial-gradient(circle at 100% 50%,transparent 20px,#000 21px);-webkit-mask-size:51% 100%,51% 100%;-webkit-mask-position:0 0,100% 0;-webkit-mask-repeat:no-repeat;mask-image:radial-gradient(circle at 0 50%,transparent 20px,#000 21px),radial-gradient(circle at 100% 50%,transparent 20px,#000 21px);mask-size:51% 100%,51% 100%;mask-position:0 0,100% 0;mask-repeat:no-repeat"></div>
+<div style="position:absolute;left:44px;top:12px;width:22px;height:112px;border-right:3px solid #101820"></div>
+<div class="fred" style="position:absolute;left:14px;top:118px;transform:rotate(-90deg);transform-origin:0 0;font-size:20px;font-weight:600;letter-spacing:3px;color:#101820;white-space:nowrap">ADMIT ONE</div>
+<div class="fred" style="position:absolute;left:92px;top:10px;font-size:62px;line-height:76px;font-weight:700;color:#101820;white-space:nowrap">Steelers @ Bengals</div>
+<div class="fred" style="position:absolute;left:94px;top:84px;font-size:24px;line-height:32px;font-weight:600;letter-spacing:3px;color:#101820">SUN NOV 15 · KICKOFF 8:20 PM</div>
+<div style="position:absolute;left:730px;top:10px;width:0;height:116px;border-left:4px dotted rgba(16,24,32,.55)"></div>
+<div style="position:absolute;left:744px;top:14px;width:224px;text-align:center;color:#101820">
+<div class="fred" style="font-size:20px;line-height:26px;letter-spacing:3px;font-weight:600">KICKOFF IN</div>
+<div class="fred" style="font-size:44px;line-height:52px;font-weight:700">4h 40m</div>
+<div><span class="fred" style="display:inline-block;background:#101820;color:#FFB612;font-size:19px;line-height:28px;padding:0 10px;border-radius:5px;letter-spacing:2px;font-weight:600">LATE GAME</span></div>
+</div>
+</div>
+<div class="mag m-blk" style="left:500px;top:478px"></div>
+
+<!-- today notepad -->
+<div class="paper" style="left:36px;top:690px;width:656px;height:540px;transform:rotate(-0.8deg);background:#FFFFFF;background-image:repeating-linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 70px,#D4E0EF 70px,#D4E0EF 72px);background-position:0 92px">
+<div style="position:absolute;left:0;top:0;width:656px;height:92px;background:#1F7A4D;background-image:linear-gradient(180deg,rgba(255,255,255,.12),rgba(0,0,0,.08))">
+<div class="fred" style="position:absolute;left:28px;top:0;font-size:46px;line-height:92px;font-weight:700;letter-spacing:6px;color:#fff">TODAY</div>
+<div style="position:absolute;right:26px;top:0;font-size:28px;line-height:92px;color:#E4F5EB">Sun · Nov 15</div>
+</div>
+<div class="mag m-red" style="left:30px;top:-18px"></div>
+<div class="mag m-yel" style="left:582px;top:-16px"></div>
+<div style="position:absolute;left:0;top:92px">
+<div class="row done" style="top:0"><span class="t">9:00</span><span class="n c-fam x">Pancake breakfast</span></div>
+<div class="row done" style="top:72px"><span class="t">10:30</span><span class="n c-fam x">Soccer game · Field 3</span></div>
+<div class="row done" style="top:144px"><span class="t">1:00</span><span class="n c-zuk x">Grandma &amp; Grandpa over</span></div>
+<div class="row" style="top:216px"><span class="t" style="color:#1B1F24">4:30</span><span class="n c-fam" style="font-weight:700"><span style="background:linear-gradient(100deg,rgba(255,226,40,0),rgba(255,226,40,.7) 4%,rgba(255,220,30,.6) 95%,rgba(255,226,40,0));padding:0 12px;margin-left:-12px">Piano lesson</span></span></div>
+<div class="row" style="top:288px"><span class="t">6:00</span><span class="n c-fam">Taco night</span></div>
+<div class="row" style="top:360px"><span class="t">8:20</span><span class="n">Steelers @ Bengals</span></div>
+</div>
+</div>
+
+<!-- next up sticky -->
+<div class="paper" style="left:722px;top:700px;width:318px;height:330px;transform:rotate(3.4deg);background:#FFB8CB;background-image:linear-gradient(165deg,rgba(255,255,255,.35),rgba(255,255,255,0) 35%),linear-gradient(0deg,rgba(120,0,40,.1),rgba(0,0,0,0) 25%)">
+<div class="mag m-green" style="left:136px;top:-18px"></div>
+<div style="position:absolute;left:28px;top:40px;right:20px;color:#3B0A1A">
+<div class="marker" style="font-size:30px;line-height:38px;color:#9C1E45">NEXT UP</div>
+<div style="font-weight:700;font-size:54px;line-height:58px;margin-top:8px">Piano lesson</div>
+<div style="font-size:32px;line-height:40px;margin-top:6px">at 4:30</div>
+<div class="marker" style="font-size:60px;line-height:72px;margin-top:6px;color:#B0102F">50 min</div>
+</div>
+</div>
+
+<!-- thanksgiving card -->
+<div class="paper" style="left:740px;top:1070px;width:290px;height:150px;transform:rotate(-3deg);background:#F07F2E;background-image:linear-gradient(160deg,rgba(255,255,255,.2),rgba(0,0,0,0) 40%)">
+<div class="mag m-blue" style="left:122px;top:-18px"></div>
+<div class="fred" style="position:absolute;left:0;right:0;top:26px;text-align:center;color:#fff;font-weight:700;font-size:58px;line-height:62px">11 days</div>
+<div style="position:absolute;left:0;right:0;top:88px;text-align:center;color:#FFF3E6;font-size:28px;line-height:34px">to Thanksgiving</div>
+</div>
+
+<!-- dry erase week board -->
+<div style="position:absolute;left:30px;top:1272px;width:1020px;height:374px;border-radius:14px;background:#C9CDD2;background-image:linear-gradient(180deg,#E4E7EA,#AEB3B9);box-shadow:0 18px 26px -10px rgba(0,0,0,.7),0 2px 4px rgba(0,0,0,.4)">
+<div style="position:absolute;left:12px;top:12px;width:996px;height:350px;border-radius:6px;overflow:hidden;background:#FAFBFC;background-image:linear-gradient(118deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.9) 38%,rgba(255,255,255,0) 46%),linear-gradient(180deg,#FFFFFF,#EEF1F4)">
+<div class="wcol" style="left:0"><div class="h" style="background:#E8392C">SUN</div><div class="num" style="position:relative">15<svg style="position:absolute;left:30px;top:2px" width="80" height="60" viewBox="0 0 80 60" fill="none" stroke="#E8392C" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M18 8 C 50 -2, 80 12, 74 34 C 68 58, 16 62, 6 38 C 2 22, 22 8, 42 6"></path></svg></div><div class="e c-fam">4:30 Piano</div><div class="e c-fam">6:00 Tacos</div><div class="e"><span class="fred" style="display:inline-block;background:#101820;color:#FFB612;border-radius:5px;padding:0 8px;font-size:19px;line-height:28px;font-weight:600">8:20 STL</span></div></div>
+<div class="wcol" style="left:143px"><div class="h" style="background:#F08A24">MON</div><div class="num">16</div><div class="e c-fam">3:15 Dentist</div><div class="e c-zuk">Trash night</div></div>
+<div class="wcol" style="left:285px"><div class="h" style="background:#E6B800">TUE</div><div class="num">17</div><div class="e c-fam">Book fair</div></div>
+<div class="wcol" style="left:428px"><div class="h" style="background:#2DA463">WED</div><div class="num">18</div><div class="e c-fam">5:30 Soccer</div></div>
+<div class="wcol" style="left:570px"><div class="h" style="background:#2F86D9">THU</div><div class="num">19</div><div class="e c-fam">4:30 Piano</div></div>
+<div class="wcol" style="left:713px"><div class="h" style="background:#5E5CD6">FRI</div><div class="num">20</div><div class="e c-fam">Pizza night</div><div class="e c-fam">7:00 Movie</div></div>
+<div class="wcol" style="left:855px"><div class="h" style="background:#B04FCF">SAT</div><div class="num">21</div><div class="e c-fam">9:00 Soccer</div><div class="e c-fam">2:00 Party</div><div class="e" style="color:#6A6F76">+1 more</div></div>
+<div class="wline" style="left:141px"></div><div class="wline" style="left:283px"></div><div class="wline" style="left:426px"></div><div class="wline" style="left:568px"></div><div class="wline" style="left:711px"></div><div class="wline" style="left:853px"></div>
+<div style="position:absolute;left:298px;top:226px;width:400px;height:110px">
+<svg style="position:absolute;left:0;top:0" width="400" height="50" viewBox="0 0 400 50" fill="none" stroke="#1F57C3" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M58 26 C 150 18, 260 32, 380 24"></path><path d="M364 12l18 12-18 13"></path><g transform="translate(6 4) scale(1.6)"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" stroke-width="2.4"></path></g></svg>
+<div class="marker" style="position:absolute;left:12px;top:54px;font-size:28px;line-height:40px;color:#1F57C3;white-space:nowrap">Dad's away · back Thu night</div>
+</div>
+</div>
+</div>
+
+<!-- forecast index card -->
+<div class="paper" style="left:40px;top:1690px;width:620px;height:206px;transform:rotate(0.8deg);background:#FBFAF5;background-image:linear-gradient(180deg,rgba(0,0,0,0) 50px,#E8564A 50px,#E8564A 52px,rgba(0,0,0,0) 52px)">
+<div class="mag m-yel" style="left:288px;top:-20px"></div>
+<div style="position:absolute;left:24px;top:6px;font-weight:700;font-size:32px;line-height:44px">Next 12 hours</div>
+<div style="position:absolute;right:20px;top:14px;font-size:21px;color:#6A6F76">sunrise 7:05 · sunset 5:00</div>
+<svg style="position:absolute;left:12px;top:56px" width="350" height="116" viewBox="0 0 600 190" preserveAspectRatio="none" fill="none" aria-hidden="true">
+<g fill="#9CC0F0"><rect x="12" y="170" width="22" height="10"></rect><rect x="59" y="170" width="22" height="10"></rect><rect x="106" y="160" width="22" height="20"></rect><rect x="153" y="150" width="22" height="30"></rect><rect x="200" y="140" width="22" height="40"></rect><rect x="247" y="140" width="22" height="40"></rect><rect x="294" y="150" width="22" height="30"></rect><rect x="341" y="160" width="22" height="20"></rect><rect x="388" y="170" width="22" height="10"></rect><rect x="435" y="170" width="22" height="10"></rect><rect x="482" y="175" width="22" height="5"></rect><rect x="529" y="175" width="22" height="5"></rect></g>
+<path d="M22 30 L69 40 L116 60 L163 80 L210 90 L257 100 L304 110 L351 110 L398 120 L445 120 L492 120 L539 130" stroke="#D2281B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<div style="position:absolute;left:22px;top:174px;width:340px;font-size:20px;line-height:26px;color:#6A6F76;white-space:nowrap">4p · 48°<span style="margin-left:40px">8p · 40%</span><span style="margin-left:40px">3a · 38°</span></div>
+<div style="position:absolute;left:378px;top:62px;width:230px;font-size:25px;line-height:44px;white-space:nowrap">
+<div><b>Mon</b> 55°/38°</div>
+<div><b>Tue</b> 58°/44°</div>
+<div><b>Wed</b> 51°/42° <span style="color:#1F57C3">70%</span></div>
+</div>
+</div>
+
+<!-- grocery pad -->
+<div class="paper" style="left:690px;top:1682px;width:350px;height:218px;transform:rotate(-1.6deg);background:#FFFFFF;background-image:repeating-linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 38px,#D4E0EF 38px,#D4E0EF 40px);background-position:0 70px">
+<div style="position:absolute;left:0;top:0;width:350px;height:62px;background:#0E8A8A">
+<div class="fred" style="position:absolute;left:22px;top:0;font-size:32px;line-height:62px;font-weight:700;letter-spacing:4px;color:#fff">WE'RE OUT</div>
+</div>
+<div class="mag m-red" style="left:282px;top:-20px"></div>
+<div style="position:absolute;left:24px;top:68px;font-weight:700;font-size:29px;line-height:40px">milk · eggs<br>bananas<br><span style="color:#6A6F76;font-weight:400">+3 more</span></div>
+<button type="button" aria-label="Add to the list" style="position:absolute;right:18px;bottom:16px;width:76px;height:76px;border-radius:50%;border:0;background:#0E8A8A;color:#fff;font-family:'Fredoka',sans-serif;font-weight:700;font-size:50px;line-height:76px;padding:0;box-shadow:0 4px 0 #0A6161,0 8px 10px rgba(0,0,0,.25)">+</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1080,"height":1920}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

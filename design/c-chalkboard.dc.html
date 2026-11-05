@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kitchen chalkboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cabin+Sketch:wght@400;700&amp;family=Patrick+Hand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#5a3a22}
+.cb{position:relative;width:1080px;height:1920px;overflow:hidden;font-family:'Patrick Hand',cursive;color:#F1EEE4;background:#6b4426;background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.10) 0,rgba(0,0,0,.10) 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 11px,rgba(255,220,170,.06) 11px,rgba(255,220,170,.06) 13px,rgba(0,0,0,0) 13px,rgba(0,0,0,0) 23px),linear-gradient(90deg,#5a3720,#7a4e2c 30%,#62401f 60%,#7d5230)}
+.slate{position:absolute;left:26px;top:26px;width:1028px;height:1800px;overflow:hidden;background:#27302C;background-image:radial-gradient(ellipse 420px 180px at 30% 20%,rgba(255,255,255,.07),rgba(255,255,255,0) 70%),radial-gradient(ellipse 520px 220px at 75% 58%,rgba(255,255,255,.055),rgba(255,255,255,0) 70%),radial-gradient(ellipse 380px 160px at 20% 80%,rgba(255,255,255,.05),rgba(255,255,255,0) 70%),radial-gradient(ellipse 300px 120px at 82% 12%,rgba(255,255,255,.045),rgba(255,255,255,0) 70%);box-shadow:inset 0 0 0 3px rgba(0,0,0,.35),inset 0 6px 16px rgba(0,0,0,.5)}
+.sketch{font-family:'Cabin Sketch',cursive;font-weight:700}
+.chalk{text-shadow:0 0 1px rgba(255,255,255,.45),0 0 6px rgba(255,255,255,.08)}
+.dust{position:absolute;left:0;top:0;pointer-events:none}
+.y{color:#F7DA6E}.b{color:#93C9F2}.g{color:#A6E0AF}.p{color:#F5AFC6}.o{color:#F6B774}.v{color:#CDB0F2}.dim{color:#A9B2AD}
+.row{position:absolute;left:0;height:66px;width:640px;line-height:66px;font-size:42px;white-space:nowrap}
+.row .t{position:absolute;left:30px;width:130px;text-align:right;font-size:34px;color:#B9C1BC}
+.row .n{position:absolute;left:190px}
+.erased{opacity:.30;filter:blur(1.2px)}
+.wk{position:absolute;top:0;width:138px;height:300px}
+.wk .d{font-family:'Cabin Sketch',cursive;font-weight:700;font-size:30px;text-align:center;color:#C9D0CB}
+.wk .num{font-family:'Cabin Sketch',cursive;font-weight:700;font-size:54px;line-height:60px;text-align:center}
+.wk .e{font-size:24px;line-height:32px;padding:0 8px;white-space:nowrap;overflow:hidden}
+</style>
+</helmet>
+<div class="cb">
+<div class="slate chalk">
+
+<!-- header -->
+<div class="sketch" style="position:absolute;left:48px;top:20px;font-size:250px;line-height:270px;letter-spacing:-2px">3:40<span style="font-size:80px;letter-spacing:0;margin-left:12px" class="y">pm</span></div>
+<div class="sketch" style="position:absolute;left:52px;top:286px;font-size:64px;line-height:76px">Sunday, November 15</div>
+<svg style="position:absolute;left:48px;top:364px" width="600" height="22" viewBox="0 0 600 22" fill="none" stroke="#F7DA6E" stroke-width="5" stroke-linecap="round" opacity=".9" aria-hidden="true"><path d="M4 12 C 140 4, 300 18, 460 9 S 570 8, 594 12"></path><path d="M30 17 C 170 10, 330 21, 560 14" stroke-width="2" opacity=".5"></path></svg>
+<div class="dim" style="position:absolute;left:54px;top:396px;font-size:24px">updated 6 min ago</div>
+
+<div style="position:absolute;right:44px;top:44px;width:360px;text-align:right">
+<div style="position:relative;height:150px">
+<svg style="position:absolute;left:0;top:14px" width="150" height="120" viewBox="0 0 140 112" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g stroke="#F7DA6E"><circle cx="94" cy="40" r="18"></circle><path d="M94 8v8M124 40h-8M116 18l-6 6M72 18l6 6"></path></g><path d="M28 94h72a18 18 0 0 0 0-36a26 26 0 0 0-48-6a22 22 0 0 0-24 42z" fill="#27302C" stroke="#F1EEE4"></path></svg>
+<div class="sketch" style="position:absolute;right:0;top:0;font-size:150px;line-height:150px">48°</div>
+</div>
+<div style="font-size:34px;line-height:42px">Cloudy · 52° / 39°</div>
+<div style="position:relative;display:inline-block;margin-top:18px;padding:6px 22px;font-size:44px;line-height:56px" class="p sketch">Jacket weather<svg style="position:absolute;left:-4px;top:-4px" width="100%" height="76" viewBox="0 0 330 76" preserveAspectRatio="none" fill="none" stroke="#F5AFC6" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M8 6 L 324 4 L 322 70 L 6 72 Z M 4 10 L 12 2"></path></svg></div>
+</div>
+
+<!-- game day band -->
+<div style="position:absolute;left:20px;top:452px;width:988px;height:124px;transform:rotate(-1deg)">
+<div style="position:absolute;left:0;top:0;width:988px;height:124px;background:#F2B21F;opacity:.92;border-radius:6px 18px 8px 22px;background-image:repeating-linear-gradient(100deg,rgba(39,48,44,.18) 0,rgba(39,48,44,.18) 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 7px)"></div>
+<svg style="position:absolute;left:30px;top:30px" width="70" height="60" viewBox="0 0 48 34" fill="none" stroke="#141A17" stroke-width="3" stroke-linecap="round" aria-hidden="true"><g transform="rotate(-22 24 17)"><ellipse cx="24" cy="17" rx="21" ry="12"></ellipse><path d="M16 17h16M20 13.5v7M24 13v8M28 13.5v7"></path></g></svg>
+<div class="sketch" style="position:absolute;left:116px;top:14px;font-size:64px;line-height:96px;color:#141A17;text-shadow:none">Steelers @ Bengals</div>
+<div style="position:absolute;right:30px;top:14px;text-align:right;color:#141A17;text-shadow:none">
+<div class="sketch" style="font-size:48px;line-height:54px">8:20 tonight</div>
+<div style="font-size:30px;line-height:40px">in 4h 40m <span style="display:inline-block;border:3px solid #141A17;border-radius:6px;padding:0 10px;font-size:22px;line-height:28px;letter-spacing:2px;vertical-align:3px;margin-left:6px">LATE GAME</span></div>
+</div>
+</div>
+
+<!-- today -->
+<div class="sketch" style="position:absolute;left:52px;top:612px;font-size:84px;line-height:96px">Today</div>
+<div class="o" style="position:absolute;left:300px;top:640px;font-size:36px;line-height:44px;transform:rotate(-2deg)">11 days 'til Thanksgiving!</div>
+<div style="position:absolute;left:0;top:724px">
+<div class="row erased" style="top:0"><span class="t">9:00</span><span class="n g">Pancake breakfast</span></div>
+<div class="row erased" style="top:66px"><span class="t">10:30</span><span class="n g">Soccer game · Field 3</span></div>
+<div class="row erased" style="top:132px"><span class="t">1:00</span><span class="n b">Grandma &amp; Grandpa over</span></div>
+<div class="row" style="top:198px"><span class="t" style="color:#F1EEE4">4:30</span><span class="n g" style="font-size:48px">Piano lesson</span></div>
+<div class="row" style="top:264px"><span class="t">6:00</span><span class="n g">Taco night</span></div>
+<div class="row" style="top:330px"><span class="t">8:20</span><span class="n y">Steelers @ Bengals</span></div>
+</div>
+<!-- next arrow -->
+<svg style="position:absolute;left:440px;top:924px" width="250" height="60" viewBox="0 0 250 60" fill="none" stroke="#F1EEE4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M240 30 C 180 26, 90 36, 12 32"></path><path d="M30 18 L 10 32 L 30 46"></path></svg>
+
+<!-- next up box -->
+<div style="position:absolute;left:700px;top:732px;width:290px;height:330px">
+<svg style="position:absolute;left:0;top:0" width="290" height="330" viewBox="0 0 290 330" fill="none" stroke="#F1EEE4" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M14 10 C 100 4, 200 8, 280 12 C 284 120, 282 220, 278 318 C 190 324, 100 322, 10 316 C 6 210, 8 110, 14 10 Z"></path><path d="M20 16 C 120 12, 200 14, 272 18" stroke-width="2" opacity=".5"></path></svg>
+<div style="position:absolute;left:28px;right:22px;top:26px">
+<div class="sketch dim" style="font-size:34px;line-height:40px">next up</div>
+<div class="sketch g" style="font-size:58px;line-height:62px;margin-top:6px">Piano lesson</div>
+<div style="font-size:34px;line-height:44px;margin-top:6px">at 4:30</div>
+<div class="sketch p" style="font-size:72px;line-height:80px;margin-top:6px">50 min</div>
+</div>
+</div>
+
+<!-- week -->
+<div class="sketch" style="position:absolute;left:52px;top:1132px;font-size:70px;line-height:80px">This week</div>
+<div style="position:absolute;left:30px;top:1212px;width:968px;height:330px">
+<svg style="position:absolute;left:0;top:0" width="968" height="330" viewBox="0 0 968 330" fill="none" stroke="rgba(241,238,228,.55)" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M4 100 C 300 96, 640 104, 964 98"></path><path d="M138 8 L 140 322"></path><path d="M276 6 L 277 324"></path><path d="M414 8 L 413 322"></path><path d="M553 6 L 555 324"></path><path d="M691 8 L 690 322"></path><path d="M829 6 L 830 324"></path></svg>
+<div class="wk" style="left:0"><div class="d p">Sun</div><div class="num p" style="position:relative">15<svg style="position:absolute;left:24px;top:-4px" width="90" height="68" viewBox="0 0 90 68" fill="none" stroke="#F5AFC6" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M20 10 C 56 -2, 90 14, 84 38 C 78 64, 18 70, 8 44 C 2 26, 22 10, 48 8"></path></svg></div><div class="e g" style="margin-top:16px">4:30 Piano</div><div class="e g">6:00 Tacos</div><div class="e y">8:20 Steelers</div></div>
+<div class="wk" style="left:139px"><div class="d">Mon</div><div class="num">16</div><div class="e g" style="margin-top:16px">3:15 Dentist</div><div class="e b">Trash night</div></div>
+<div class="wk" style="left:277px"><div class="d">Tue</div><div class="num">17</div><div class="e g" style="margin-top:16px">Book fair</div></div>
+<div class="wk" style="left:415px"><div class="d">Wed</div><div class="num">18</div><div class="e g" style="margin-top:16px">5:30 Soccer</div></div>
+<div class="wk" style="left:554px"><div class="d">Thu</div><div class="num">19</div><div class="e g" style="margin-top:16px">4:30 Piano</div></div>
+<div class="wk" style="left:692px"><div class="d">Fri</div><div class="num">20</div><div class="e g" style="margin-top:16px">Pizza night</div><div class="e g">7:00 Movie</div></div>
+<div class="wk" style="left:830px"><div class="d">Sat</div><div class="num">21</div><div class="e g" style="margin-top:16px">9:00 Soccer</div><div class="e g">2:00 Party</div><div class="e dim">+1 more</div></div>
+<div style="position:absolute;left:290px;top:222px;width:400px;height:100px">
+<svg style="position:absolute;left:0;top:0" width="400" height="50" viewBox="0 0 400 50" fill="none" stroke="#93C9F2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M56 26 C 150 18, 260 32, 380 24" stroke-dasharray="12 10"></path><path d="M364 12l18 12-18 13"></path><g transform="translate(6 4) scale(1.6)"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" stroke-width="2.2"></path></g></svg>
+<div class="b" style="position:absolute;left:14px;top:50px;font-size:28px;line-height:38px;white-space:nowrap">Dad's away · back Thu night</div>
+</div>
+</div>
+
+<!-- bottom: weather + list -->
+<div style="position:absolute;left:52px;top:1552px;width:600px">
+<div style="position:relative;height:50px"><span class="sketch" style="font-size:44px;line-height:50px">Next 12 hours</span><span class="dim" style="position:absolute;right:0;top:14px;font-size:22px">sunrise 7:05 · sunset 5:00</span></div>
+<svg width="600" height="112" viewBox="0 0 600 120" fill="none" aria-hidden="true">
+<g stroke="#93C9F2" stroke-width="3" stroke-linecap="round"><path d="M22 112v-6M69 112v-6M116 112v-12M163 112v-18M210 112v-24M257 112v-24M304 112v-18M351 112v-12M398 112v-6M445 112v-6M492 112v-3M539 112v-3"></path><path d="M16 112v-6M63 112v-6M110 112v-12M157 112v-18M204 112v-24M251 112v-24M298 112v-18M345 112v-12M392 112v-6M439 112v-6M486 112v-3M533 112v-3M28 112v-6M75 112v-6M122 112v-12M169 112v-18M216 112v-24M263 112v-24M310 112v-18M357 112v-12M404 112v-6M451 112v-6M498 112v-3M545 112v-3"></path></g>
+<path d="M22 22 C 45 24, 60 25, 69 28 S 100 38, 116 42 S 150 54, 163 56 S 196 62, 210 63 S 240 68, 257 70 S 290 76, 304 77 S 336 77, 351 77 S 382 82, 398 84 S 430 84, 445 84 S 476 84, 492 84 S 524 89, 539 91" stroke="#F1EEE4" stroke-width="4" stroke-linecap="round"></path>
+<g fill="#F1EEE4" font-family="Patrick Hand, cursive" font-size="22"><text x="12" y="14">48°</text><text x="520" y="76">38°</text><text x="196" y="80" fill="#93C9F2">40%</text></g>
+</svg>
+<div class="dim" style="position:relative;height:26px;font-size:21px;line-height:26px"><span style="position:absolute;left:10px">4p</span><span style="position:absolute;left:104px">6p</span><span style="position:absolute;left:198px">8p</span><span style="position:absolute;left:290px">10p</span><span style="position:absolute;left:384px">12a</span><span style="position:absolute;left:480px">2a</span></div>
+<div style="position:relative;height:40px;margin-top:4px;font-size:28px;line-height:40px;white-space:nowrap"><span class="sketch">Mon</span> 55°/38° <span class="sketch" style="margin-left:30px">Tue</span> 58°/44° <span class="sketch" style="margin-left:30px">Wed</span> 51°/42° <span class="b">70%</span></div>
+</div>
+
+<div style="position:absolute;left:700px;top:1548px;width:300px;height:220px">
+<div class="sketch o" style="font-size:46px;line-height:52px">We're out:</div>
+<div style="font-size:32px;line-height:42px;margin-top:6px">milk · eggs<br>bananas<br><span class="dim">+3 more</span></div>
+<button type="button" aria-label="Add to the list" style="position:absolute;right:8px;bottom:14px;width:80px;height:80px;border-radius:50%;border:4px solid #F6B774;background:rgba(246,183,116,.08);color:#F6B774;font-family:'Cabin Sketch',cursive;font-weight:700;font-size:56px;line-height:66px;padding:0">+</button>
+</div>
+
+<svg class="dust" width="1028" height="1800" aria-hidden="true"><filter id="cbdust"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4"></feTurbulence><feColorMatrix type="matrix" values="0 0 0 0 0.153  0 0 0 0 0.188  0 0 0 0 0.172  0 0 0 2.6 -1.35"></feColorMatrix></filter><rect width="1028" height="1800" filter="url(#cbdust)"></rect></svg>
+</div>
+
+<!-- chalk ledge -->
+<div style="position:absolute;left:0;top:1826px;width:1080px;height:94px;background:#6e4628;background-image:linear-gradient(180deg,#8a5a34,#5b3a20 60%,#4a2e18);box-shadow:0 -6px 12px rgba(0,0,0,.45)">
+<div style="position:absolute;left:120px;top:16px;width:150px;height:22px;border-radius:11px;background:#F4F1E8;box-shadow:0 4px 4px rgba(0,0,0,.4);transform:rotate(-3deg)"></div>
+<div style="position:absolute;left:300px;top:22px;width:110px;height:20px;border-radius:10px;background:#F7DA6E;box-shadow:0 4px 4px rgba(0,0,0,.4);transform:rotate(2deg)"></div>
+<div style="position:absolute;left:432px;top:18px;width:80px;height:20px;border-radius:10px;background:#F5AFC6;box-shadow:0 4px 4px rgba(0,0,0,.4);transform:rotate(-1deg)"></div>
+<div style="position:absolute;left:760px;top:6px;width:200px;height:52px;border-radius:8px;background:linear-gradient(180deg,#3a3f46 0,#3a3f46 40%,#d9d4c8 40%,#bdb7a8);box-shadow:0 6px 6px rgba(0,0,0,.45);transform:rotate(1.5deg)"></div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1080,"height":1920}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+.env
+.env.local
+payload.json
+*.payload.json
+data.enc.json
+.DS_Store
