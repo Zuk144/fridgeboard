@@ -2,15 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="robots" content="noindex">
   <title>Fridgeboard</title>
+  <link rel="preload" href="fonts/caveat-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/patrick-hand-400.woff2" as="font" type="font/woff2" crossorigin>
   <style>
-    html, body { margin: 0; height: 100%; background: #F5EFE1; color: #1E2B4A; font-family: Georgia, serif; }
-    #app { padding: 80px 70px; font-size: 40px; line-height: 1.4; }
+    /* Self-hosted (SIL OFL, see fonts/OFL.txt). swap: text shows at once in a fallback font. */
+    @font-face { font-family: 'Caveat'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/caveat-700.woff2) format('woff2'); }
+    @font-face { font-family: 'Patrick Hand'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/patrick-hand-400.woff2) format('woff2'); }
+    html, body { margin: 0; height: 100%; background: #2a2724; }
   </style>
 </head>
 <body>
-  <div id="app">Fridgeboard is on its way.</div>
+  <div id="app"></div>
+  <noscript><p style="color:#F5EFE1;font:24px sans-serif;padding:40px">Fridgeboard needs JavaScript.</p></noscript>
   <script type="module" src="./src/main.ts"></script>
 </body>
 </html>

@@ -139,9 +139,14 @@ export interface ApiError {
   error: string;
 }
 
+/** Module switches in DASH_CONFIG (frame §9). Anything left out stays on. */
+export const MODULE_SWITCHES = ['calendar', 'week', 'gameday', 'weather', 'kitchen'] as const;
+export type ModuleSwitch = (typeof MODULE_SWITCHES)[number];
+
 /** What the fridge needs to reach the Google side. Ships only inside the encrypted config. */
 export interface FridgeConfig {
   schemaVersion: number;
   endpointUrl: string;
   key: string;
+  modules?: Partial<Record<ModuleSwitch, boolean>>;
 }
