@@ -60,6 +60,12 @@ Done by Zuk (with Claude in Chrome on the laptop):
 Every deploy now encrypts the config, checks it opens (`decrypt-check`), and calls the live script
 (`script-check`, counts only in the public log).
 
+**M1 verified end to end (Nov 5, deploy run 42084560754):** `decrypt-check: PASS`, and
+`script-check: PASS · schema 1 · 4 calendars · 2 events · 0 trips · weather ok · list 0 needed ·
+28 list buttons`. The 2 events match the real calendars for Nov 5–18 (Veterans Day and Steelers
+@ Bengals; Dad and Family are empty). The real Apps Script ran Code.gs with no runtime errors.
+(DASH_PASSPHRASE had to be lengthened to 8+ characters first.)
+
 ## Waiting on Zuk
 
 ### Probe the fridge (C1)
@@ -157,6 +163,7 @@ Then tell Claude "secrets are in". Never paste the URL, key, or passphrase into 
 ## Next
 
 1. Probe photos from the fridge (finishes M0); set the build target and screen size from them.
+   M2 doesn't wait for them: it targets Chrome ~63 at 1080×1920 portrait and 1920×1080 landscape.
 2. Build M2 in the paper look on fake board data (`?now=` preview override, every screenshot
    state in the prompt), wired to the real script once the secrets are in.
 3. M2.5 board UI + sync on top of the already-built script endpoints.
