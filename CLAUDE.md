@@ -20,6 +20,7 @@ For build work, use the `dash-dev` agent (`.claude/agents/dash-dev.md`). It has 
 - `npm run build` — production build to `dist/` (the probe is copied from `public/probe/`)
 - `npm run encrypt-config` — `DASH_CONFIG` + `DASH_PASSPHRASE` (env or `.env.local`) → `dist/config.enc.json`
 - `npm run decrypt-check [-- <url>]` — round-trips the built or deployed config
+- `npm run script-check` — calls the live Google script with `DASH_CONFIG` and prints counts only (runs on every deploy)
 - `npm test` (includes the Apps Script harness and the dist guard) / `npm run typecheck` / `npm run lint`
 - The Google side has no build: paste `apps-script/Code.gs` into the Sheet's Apps Script editor and deploy a new version.
 

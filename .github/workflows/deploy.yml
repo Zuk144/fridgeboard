@@ -41,6 +41,12 @@ jobs:
         run: npm run decrypt-check
         env:
           DASH_PASSPHRASE: ${{ secrets.DASH_PASSPHRASE }}
+      - name: Check the Google script answers (prints counts only)
+        if: ${{ hashFiles('dist/config.enc.json') != '' }}
+        continue-on-error: true
+        run: npm run script-check
+        env:
+          DASH_CONFIG: ${{ secrets.DASH_CONFIG }}
       - name: Tests, including the guard that nothing readable is published
         run: npm test
       - uses: actions/upload-pages-artifact@v3

@@ -12,7 +12,8 @@
     "decrypt-check": "vite-node scripts/decrypt-check.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "script-check": "vite-node scripts/script-check.ts"
   },
   "engines": {
     "node": ">=20"

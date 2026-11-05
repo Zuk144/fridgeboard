@@ -47,17 +47,32 @@ Updated Nov 5, 2026. A fresh session should read this file first, then `DASHBOAR
   Pages. No schedule, so there's no 60-day shutoff to manage.
 - Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` (32 tests) all pass.
 
+## Setup status (Nov 5)
+
+Done by Zuk (with Claude in Chrome on the laptop):
+- Public repo `Zuk144/fridgeboard`; the Claude GitHub app already covers all repos.
+- Pages on (Source: GitHub Actions); the first deploy succeeded.
+- Google Sheet "Fridgeboard" with the script pasted, `setup()` run, weather town set (coordinates
+  found), "Me" relabeled "Dad", calendars on: Dad, Family, Holidays, Steelers. Web app deployed
+  (Version 1, execute as Zuk, access Anyone). It answers `bad_key` without the key.
+- Secrets `DASH_CONFIG` and `DASH_PASSPHRASE` saved.
+
+Every deploy now encrypts the config, checks it opens (`decrypt-check`), and calls the live script
+(`script-check`, counts only in the public log).
+
 ## Waiting on Zuk
 
-### 1. Turn on Pages (30 seconds)
+### Probe the fridge (C1)
 
-The repo exists and the code is on `main`. **fridgeboard repo → Settings → Pages → Build and
-deployment → Source: GitHub Actions.** Then **Actions → Deploy to Pages → Re-run all jobs** if
-the first run failed at the deploy step (it can't deploy before Pages is on).
+Open `https://zuk144.github.io/fridgeboard/probe/` in the fridge's browser, wait for **DONE**,
+and photograph the white results box and the look tests below it. Send the photos.
 
-`LAPTOP_SETUP.md` has a paste-in prompt that has Claude in Chrome on the laptop do steps 1–3.
+## Reference: Google setup steps
 
-### 2. Google setup: plug in the calendar (about 10 minutes, no GitHub needed)
+Kept for re-doing the setup or updating the script. `LAPTOP_SETUP.md` has the same steps as a
+paste-in prompt for Claude in Chrome.
+
+### Google setup (about 10 minutes)
 
 Use Safari on the iPad or any computer. If a Google page opens the mobile view or the app, tap
 **aA → Request Desktop Website** in Safari.
@@ -106,7 +121,7 @@ Use Safari on the iPad or any computer. If a Google page opens the mobile view o
 - Paste the new `Code.gs`, save, then **Deploy → Manage deployments → pencil icon → Version:
   New version → Deploy**. The URL stays the same.
 
-### 3. Secrets
+### Secrets
 
 **fridgeboard repo → Settings → Secrets and variables → Actions → New repository secret**, twice:
 - Name `DASH_CONFIG`, value (fill in your two values):
@@ -115,11 +130,6 @@ Use Safari on the iPad or any computer. If a Google page opens the mobile view o
   made-up words is good).
 
 Then tell Claude "secrets are in". Never paste the URL, key, or passphrase into chat.
-
-### 4. Probe the fridge (C1, once Pages is on)
-
-Open `https://zuk144.github.io/fridgeboard/probe/` in the fridge's browser, wait for **DONE**,
-and photograph the white results box and the look tests below it. Send the photos.
 
 ## Small calls made (no need to weigh in)
 
@@ -146,7 +156,7 @@ and photograph the white results box and the look tests below it. Send the photo
 
 ## Next
 
-1. Zuk turns on Pages → first deploy → probe on the fridge (finishes M0).
+1. Probe photos from the fridge (finishes M0); set the build target and screen size from them.
 2. Build M2 in the paper look on fake board data (`?now=` preview override, every screenshot
    state in the prompt), wired to the real script once the secrets are in.
 3. M2.5 board UI + sync on top of the already-built script endpoints.
