@@ -5,7 +5,7 @@ import { bucketDay } from '../logic/days';
 import { awayBanner, awayOn } from '../logic/away';
 import { holidayCountdown } from '../logic/holidays';
 import { eventState } from '../logic/nextup';
-import { clockFace, longDate, relativeDay } from '../logic/time';
+import { clockFace, daysBetween, longDate } from '../logic/time';
 import { at, esc } from '../ui/html';
 import { calOf, chip, dots, inkOf, pill } from '../ui/events';
 
@@ -14,7 +14,7 @@ export type Overlay =
   | { kind: 'kitchen' }
   | { kind: 'settings'; confirm: boolean };
 
-const closeX = '<div class="ov-close hand" data-act="close" role="button" aria-label="Close">×</div>';
+const closeX = '<div class="ov-close" data-act="close" role="button" aria-label="Close"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" stroke-width="6" stroke-linecap="round" aria-hidden="true"><path d="M10 11 C 22 22, 34 33, 46 45"/><path d="M45 10 C 33 23, 22 33, 11 46"/></svg></div>';
 const closeBig = '<div class="ov-done hand" data-act="close" role="button">Close</div>';
 
 function range(e: BoardEvent, ctx: BaseCtx): string {
@@ -27,12 +27,14 @@ function agenda(board: Board, day: DayKey, now: number, ctx: BaseCtx): string {
   const W = ctx.stage.W;
   const H = ctx.stage.H;
   const b = bucketDay(board.events, day);
-  const rel = relativeDay(ctx.today, day);
+  const n = daysBetween(ctx.today, day);
+  const rel = n === 0 ? 'today' : n === 1 ? 'tomorrow' : n > 1 ? `in ${n} days` : n === -1 ? 'yesterday' : `${-n} days ago`;
+  const title = longDate(day);
   const away = awayOn(board.away, day);
   const cd = day === ctx.today ? holidayCountdown(board.events, day) : null;
   let y = 250;
-  let html = closeX + `<div class="ov-title hand" style="${at(70, 60)}">${esc(longDate(day))}</div>`;
-  html += `<div class="ov-sub pencil" style="${at(76, 176)}">${esc(rel === 'today' ? 'today' : rel === 'tomorrow' ? 'tomorrow' : `${rel}`)}${cd ? ` · ${esc(cd.text)}` : ''}</div>`;
+  let html = closeX + `<div class="ov-title hand" style="${at(70, 60)}${title.length > 21 ? 'font-size:80px;' : ''}">${esc(title)}</div>`;
+  html += `<div class="ov-sub pencil" style="${at(76, 176)}">${esc(rel)}${cd ? ` · ${esc(cd.text)}` : ''}</div>`;
   if (away) {
     html += `<div class="ov-away hand" style="${at(70, y)}">${esc(awayBanner(away, ctx.today))}</div>`;
     y += 80;
@@ -71,8 +73,8 @@ function kitchen(board: Board): string {
   const more = k.count > (k.names || []).length ? `<li class="pencil">+${k.count - k.names.length} more</li>` : '';
   return `<div class="overlay paper">${closeX}` +
     `<div class="ov-title hand" style="${at(70, 60)};color:var(--red)">We're out</div>` +
-    `<div class="ov-pad">${k.count ? `<ul>${names}${more}</ul>` : '<p class="pencil">Nothing on the list right now.</p>'}</div>` +
-    `<div class="ov-note">Tap-to-add buttons for the fridge are coming in the next update. For now, add things on a phone: open the Fridgeboard Sheet, Needed tab.</div>` +
+    `<div class="ov-body"><div class="ov-pad">${k.count ? `<ul>${names}${more}</ul>` : '<p class="pencil">Nothing on the list right now.</p>'}</div>` +
+    `<p class="ov-text">Tap-to-add buttons for the fridge are coming in the next update. For now, add things on a phone: open the Fridgeboard Sheet, Needed tab.</p></div>` +
     `${closeBig}</div>`;
 }
 

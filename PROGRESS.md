@@ -1,6 +1,6 @@
 # FRIDGEBOARD progress
 
-Updated Nov 5, 2026. A fresh session should read this file first, then `DASHBOARD_FRAME.md` and `CLAUDE.md`.
+Updated Nov 5, 2026 (M2 built). A fresh session should read this file first, then `DASHBOARD_FRAME.md` and `CLAUDE.md`.
 
 ## Where things live right now
 
@@ -18,6 +18,9 @@ Updated Nov 5, 2026. A fresh session should read this file first, then `DASHBOAR
   and adds weather; there are no secret iCal links and no scheduled GitHub job. Frame §3, §4, §5.1,
   §5.2, §5.4, §11–13 were rewritten for it.
 - **Repo:** public `Zuk144/fridgeboard`, created by Zuk (with Claude in Chrome on his laptop).
+- **Target screen (from the probe):** 720 x 1229 CSS px portrait at DPR 1.5, Chrome 108. The page
+  is drawn 1080 units wide and scaled to fit; its height flexes between about 1844 and 1920 units.
+  Landscape 1920 x 1080 works but is secondary.
 
 ## Done
 
@@ -28,6 +31,14 @@ Updated Nov 5, 2026. A fresh session should read this file first, then `DASHBOAR
   grid, flex gap, CSS effects, Intl + both 2026 DST checks, CPU, the paper look's fonts, a
   text/plain POST and a redirect fetch (`?ep=<script URL>` aims them at the real script), plus six
   look tests. Checked at 1080×1920 and 1920×1080.
+- **M0 done on the real fridge (Nov 5, 13:35):** Tizen 7.0, Family Hub 10.0, SamsungBrowser 1.0 on
+  **Chrome 108**; viewport 721 x 1229 CSS px (browser bars showing), screen 720 x 1280, **DPR 1.5**;
+  touchstart + PointerEvent (maxTouchPoints reports 0, so don't rely on it); secure context; ES2015,
+  async, spread, optional chaining; fetch, TextEncoder, localStorage; grid, flex gap, CSS vars,
+  clip-path, mask, filter, sticky, object-fit; Intl America/New_York with both DST checks (device
+  zone is New York); CPU loop 70 ms vs about 10 on a laptop (~7x slower); AES-GCM, PBKDF2 150k in
+  80 ms, JWK store; text/plain POST 200 in 447 ms and redirect-following fetch both pass; all six
+  web fonts and every look test render.
 - **M0 skeleton:** Vite 5 + TypeScript + `@vitejs/plugin-legacy` (targets Chrome ≥ 61), Vitest,
   ESLint, `shared/payload.ts` (schemaVersion 1), placeholder `index.html`, dist guard test.
 - **M1 Google side** (`apps-script/Code.gs`): `setup()` builds Settings, Calendars (auto-listed
@@ -45,7 +56,37 @@ Updated Nov 5, 2026. A fresh session should read this file first, then `DASHBOAR
 - **Deploy workflow** (`.github/workflows/deploy.yml`): push to main or run by hand → typecheck,
   lint, build, encrypt config (skipped until secrets exist), decrypt-check, tests, deploy to
   Pages. No schedule, so there's no 60-day shutoff to manage.
-- Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` (32 tests) all pass.
+- **M2 dashboard (paper planner)**, in `src/`:
+  - Unlock once with the passphrase (stored JWK key after; the encrypted config is kept too, so an
+    offline reboot still unlocks), "Not set up yet" when `config.enc.json` is missing, a clear note
+    for a wrong key or a newer script schema.
+  - Board: header (clock, date, weather now + hi/lo, wear call circled in red pen, "updated X min
+    ago"), game-day washi tape (countdown → "Game on!" for 3 hours, LATE GAME tag), Dad's-away
+    note, Today (all-day chips, ruled timeline, crossed-out past, highlighter, folding when full,
+    empty-day note), Next Up sticky with countdown (or a "coming up" index card when nothing is
+    left today), holiday countdown kraft tag, rolling 7-day week grid with the trip arrow, 12-hour
+    weather strip + 3-day outlook + sunrise/sunset, "We're out" notepad from `board.kitchen`.
+  - Tap a day (week column, Today, the sticky) → full-screen agenda. Tap the notepad → placeholder
+    pointing at the Sheet (the real list board is M2.5). Long-press the clock → Reload / Forget
+    this device.
+  - Fridge behavior: 5-minute polling (re-render only on a new board), minute ticks that touch
+    only changed DOM, retry backoff, JSONP fallback, last good board kept for offline, offline
+    badge, amber stale banner, night mode 10 pm–6 am (dim clock + next morning's first event, tap
+    wakes the dark board for 60 s), Tomorrow peek from 6 pm, hourly burn-in drift, overlays close
+    after 2 minutes.
+  - Modules with switches in `DASH_CONFIG.modules` (`calendar`, `week`, `gameday`, `weather`,
+    `kitchen`; all on unless set false); the layout gives a missing module's room to Today.
+  - Self-hosted Caveat 700 + Patrick Hand (woff2, OFL in `public/fonts/OFL.txt`), a 22 KB grain PNG.
+  - Build: both plugin-legacy bundles aimed at Chrome 108, no modern polyfills. The fridge loads
+    about 18 KB gzipped JS + 5 KB CSS.
+  - Dev only: `?fixture=<name>` (fake boards made by the real Code.gs in the harness,
+    `test/fixtures/boards.ts`), `?now=`, `?offline=1`, `?off=`, `?open=`. Not in the build.
+- Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` (93 tests: script
+  harness, crypto, dist guard, 26 board-logic tests, 33 render/layout tests over every fixture).
+- Screenshots of every state at 720 x 1229 and 720 x 1280 (DPR 1.5) and landscape were looked at
+  and fixed; four are committed in `design/screens/`. A headless run of the built site checked the
+  real flow: not set up, unlock, wrong passphrase, stored key on reload, offline, stale, JSONP
+  fallback, bad key, forget this device.
 
 ## Setup status (Nov 5)
 
@@ -68,10 +109,17 @@ Every deploy now encrypts the config, checks it opens (`decrypt-check`), and cal
 
 ## Waiting on Zuk
 
-### Probe the fridge (C1)
+### Look at M2 on the fridge
 
-Open `https://zuk144.github.io/fridgeboard/probe/` in the fridge's browser, wait for **DONE**,
-and photograph the white results box and the look tests below it. Send the photos.
+1. On the fridge, open https://zuk144.github.io/fridgeboard/ (refresh if the probe page is open).
+2. Type the passphrase (the `DASH_PASSPHRASE` secret) and tap **Unlock**. It only asks once.
+3. Check from across the kitchen: is the clock and today's list readable? Does tapping a day open
+   the agenda, and does the big **Close** button work?
+4. Long-press the clock for a second to see the hidden **Forget this device** option.
+5. Send a photo or two, plus anything that looks off.
+
+Your real calendars are nearly empty right now, so expect mostly the Steelers, holidays and the
+"coming up" card. Putting something on the Family calendar shows up within about 5 minutes.
 
 ## Reference: Google setup steps
 
@@ -140,6 +188,14 @@ Then tell Claude "secrets are in". Never paste the URL, key, or passphrase into 
 ## Small calls made (no need to weigh in)
 
 - Week strip is a rolling 7 days starting today.
+- M2: the week grid writes times in planner shorthand ("6 Taco night", "4:30 Piano") and wraps
+  titles to two lines; today's column lists only what's still ahead.
+- M2: an empty Today shows a "coming up" index card with the next thing on the calendar where the
+  Next Up sticky would be (the sticky itself stays hidden when nothing is left today).
+- M2: night mode looks ahead to tomorrow before midnight and to the same day after midnight.
+- M2: module on/off switches live in `DASH_CONFIG.modules` (all on by default), so turning one off
+  is a secret edit + redeploy, not a code change.
+- M2: the modern bundle ships no polyfills (Chrome 108 has everything the code uses).
 - Removed Zuk's email from `DASHBOARD_FRAME.md` §5.1 (the repo will be public).
 - Fonts: the real build self-hosts the look's two fonts (Caveat, Patrick Hand) as woff2.
 - Paper texture: a small pre-rendered grain PNG instead of the mockups' live SVG filter.
@@ -160,17 +216,26 @@ Then tell Claude "secrets are in". Never paste the URL, key, or passphrase into 
   Steelers games and holidays. Family events should go on the Family calendar.
 - No Travel calendar yet. Until there is one, "Dad's away" comes from flight/hotel keywords.
 
+## Open questions (no rush)
+
+- **Night hours:** 10 pm to 6 am (Settings tab, `nightStartHour` / `nightEndHour`). Change them in
+  the Sheet if the kitchen is still busy at 10.
+- **Christmas countdown:** the tag only sees as far as the board's 14 days (`daysAhead`). A longer
+  holiday lookahead needs a small script change; parked in `IDEAS.md`.
+- **Landscape:** works, not polished. Only matters if the board is ever shown on a landscape screen.
+
 ## Next
 
-1. Probe photos from the fridge (finishes M0); set the build target and screen size from them.
-   M2 doesn't wait for them: it targets Chrome ~63 at 1080×1920 portrait and 1920×1080 landscape.
-2. Build M2 in the paper look on fake board data (`?now=` preview override, every screenshot
-   state in the prompt), wired to the real script once the secrets are in.
-3. M2.5 board UI + sync on top of the already-built script endpoints.
+1. Zuk looks at M2 on the fridge (above). Fix what's off; measure unlock + first render there.
+2. **M2.5 kitchen list board:** the tap-to-add tiles, undo toast, offline queue and sync badge on
+   top of the script's `state` / `need` / `undo` / `gotit` endpoints (frame §8). The "We're out"
+   notepad's tap currently opens a placeholder; it becomes the door to the list board.
+3. M3 hardening: per-source error states, a performance check on the fridge, README.
 
 ## Prompt to continue in a fresh session
 
 ```
 Use the dash-dev agent. Read PROGRESS.md, DASHBOARD_FRAME.md and CLAUDE.md, then continue from
-"Next".
+"Next" (M2.5, the kitchen list board, unless Zuk's fridge photos need fixes first). Check visual
+work with `npm run dev` and `?fixture=<name>` at 720x1229, deviceScaleFactor 1.5.
 ```

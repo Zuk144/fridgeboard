@@ -4,19 +4,19 @@ Family dashboard for Zuk's Samsung Family Hub fridge screen. It's a static site 
 
 **Read `DASHBOARD_FRAME.md` before any feature work.** It's the source of truth for what we're building and why. If you change behavior, update the frame in the same change.
 
-For build work, use the `dash-dev` agent (`.claude/agents/dash-dev.md`). It has the rules for the old fridge browser, privacy, and verification.
+For build work, use the `dash-dev` agent (`.claude/agents/dash-dev.md`). It has the rules for the fridge browser, privacy, and verification.
 
 ## Hard rules (short version)
 
 1. **No personal data in the repo, ever.** The repo is public. The script URL, its key, and the passphrase live only in GitHub Secrets (`DASH_CONFIG`, `DASH_PASSPHRASE`) and a local, gitignored `.env.local`. Calendar choices and home location live in Zuk's Sheet. Fixtures are fake.
 2. **Only encrypted config gets published.** `dist/` holds the page and `config.enc.json`, nothing readable about the family. A test enforces it.
-3. **Old-browser safe.** The fridge browser is old Chromium on Tizen. Build through `@vitejs/plugin-legacy`. No framework-heavy dependencies, no hover-only UI.
-4. **Not done until it's seen.** Visual work needs a screenshot at the fridge resolution (from the M0 probe; until then, 1080×1920 portrait and 1920×1080 landscape).
+3. **Fridge-browser safe.** The fridge runs Samsung's Tizen browser on Chrome 108 (M0 probe) with a CPU about 7x slower than a laptop. Build through `@vitejs/plugin-legacy` (kept as a safety net). No framework-heavy dependencies, no hover-only UI, cheap repaints.
+4. **Not done until it's seen.** Visual work needs a screenshot at the fridge's viewport: 720×1229 CSS px at deviceScaleFactor 1.5 (and 720×1280, when its browser bars hide). Landscape 1920×1080 is secondary.
 5. **Work stays off the fridge.** Travel shows only "Dad's away." Strip work titles, locations, and descriptions in the script, not in the UI.
 
 ## Commands (fill in as they exist)
 
-- `npm run dev` — local dashboard
+- `npm run dev` — local dashboard. Dev only: `?fixture=<name>` shows a fake board without unlocking (names in `test/fixtures/boards.ts`), `?now=2026-11-15T19:30` sets the clock, `?offline=1`, `?off=weather,kitchen`, `?open=agenda:2026-11-16|kitchen|settings`
 - `npm run build` — production build to `dist/` (the probe is copied from `public/probe/`)
 - `npm run encrypt-config` — `DASH_CONFIG` + `DASH_PASSPHRASE` (env or `.env.local`) → `dist/config.enc.json`
 - `npm run decrypt-check [-- <url>]` — round-trips the built or deployed config

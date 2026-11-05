@@ -21,7 +21,10 @@ It is read at a glance from across the kitchen and tapped with wet or messy hand
 2. **The calendar is the spine.** Every other panel is secondary and can be turned off.
 3. **Private by default.** The page is on the public internet, but nothing personal is published there. Family data goes straight from Google to the fridge, and only with a key that ships inside an encrypted config. The page shows nothing until it's unlocked.
 4. **Never lies about freshness.** If data is stale or a feed failed, the page says so plainly instead of quietly showing old info.
-5. **Works on an old browser.** The fridge browser is years behind. Plain, sturdy front-end code, compiled down, and tested on the actual fridge.
+5. **Works on the fridge's browser.** Plain, sturdy front-end code with no framework. The M0 probe
+   (Nov 5, 2026) found Samsung's Tizen browser on **Chrome 108**, newer than first feared; the build
+   still goes through `@vitejs/plugin-legacy` as a safety net. The fridge CPU is about 7x slower
+   than a laptop, so repaints stay cheap.
 
 ### Look: paper planner (decided Nov 5, 2026)
 
@@ -42,6 +45,13 @@ canvas linked in `PROGRESS.md`):
   replaces that). Paper colors are cream, never pure white, to keep the glow down.
 - Real build notes: self-host the two fonts as woff2 with `font-display: swap`; use a small
   pre-rendered grain PNG instead of the mockups' live SVG noise filter.
+
+**As built (M2, Nov 2026).** The page is drawn on a stage 1080 units wide and scaled to the
+screen. The fridge shows 720 x 1229 CSS px at DPR 1.5 (1080 x 1844 units, 1080 x 1920 when its
+browser bars hide), so one unit is one physical pixel there and the type sizes in §7 are in these
+units. The height flexes; the Today panel takes up the slack. A 1920-wide landscape arrangement
+exists for other screens but isn't polished. Calendar inks come from the Sheet and are nudged
+darker (lighter at night) until they read at 4.5:1 on the paper.
 
 ## 3. Architecture ($0: Google + GitHub)
 
@@ -110,7 +120,8 @@ code change and no redeploy:
 **GitHub Secrets** hold only what the fridge needs to find the script:
 
 - `DASH_CONFIG`: `{ "endpointUrl": "https://script.google.com/macros/s/…/exec", "key": "…" }`
-  (template: `config/dash-config.example.json`).
+  (template: `config/dash-config.example.json`). Optional `"modules": {"kitchen": false}` turns
+  panels off (§9).
 - `DASH_PASSPHRASE`: the passphrase typed once on the fridge.
 
 ## 5. The calendar (v1 core)
@@ -142,12 +153,12 @@ including subscribed public calendars, so no feed URLs are needed:
 - `busy`-only calendars publish only "Busy" blocks with no titles. `hideKeywords` drops matches.
 
 ### 5.3 Views
-- **Header bar:** big clock, date, weather now plus today's high/low, a jacket call ("Jacket weather" / "T-shirt day" / "Rain gear"), and "updated X min ago".
-- **Today panel (largest):** all-day items as chips on top, then a timeline of today's events. Past events fade. The current event is highlighted.
-- **Next Up card:** the next event with a live countdown ("Soccer practice in 1h 20m"), hidden when nothing is left today.
-- **This Week strip:** 7 day-columns with event counts and the first 2–3 titles in each. Tap a day to open a full-screen agenda for that day.
-- **Tomorrow peek:** after 6 pm, Today shrinks and Tomorrow grows, since that's what the evening kitchen cares about.
-
+- **Header:** big clock (236 units), date with a red-pen underline, weather now with today's high/low, the wear call ("Jacket weather" / "T-shirt day" / "Rain gear" / "Jacket + rain gear") circled in red pen, and "updated X min ago".
+- **Today panel (largest, flexes with the screen):** all-day items as chips on top (holidays first, purple), then a hand-ruled timeline. Past events are crossed out in pen and fade; the current event (or, if none, the next one) gets the yellow highlighter. Sports rows carry a black-and-gold "on TV" pill ("on TV · late" after 8 pm). When rows don't fit, older finished events fold into "✓ N done earlier", then the tail folds into "+N more · tap for the whole day". Tapping the panel opens the day agenda. An empty day says "Nothing on today" with a pencil hint to use the Family calendar.
+- **Next Up sticky:** the next event today with a live countdown in red pen ("in 50 min", "in 4h 40m"). Hidden when nothing is left today. On a day with nothing left, a pale **"coming up" index card** shows the next thing on the calendar instead ("Veterans Day · Wednesday · in 2 days"), so a quiet calendar still looks alive.
+- **This Week:** a hand-ruled grid of the next 7 days starting today (rolling, not Sun–Sat). Each column: weekday, date (today circled in red pen), then all-day chips, timed events in each calendar's ink with planner-shorthand times ("6 Taco night", "4:30 Piano lesson", titles wrap to two lines), and games as black-and-gold pills ("8:20 Steelers"). Today's column lists only what's still ahead. "+N more" when a column fills. Tap a day for a full-screen agenda with a big close button.
+- **Day agenda:** the whole day with time ranges, calendar labels, chips, the away note and the holiday countdown; closes itself after 2 minutes untouched.
+- **Tomorrow peek:** from `tomorrowPeekHour` (6 pm) to midnight, Today shrinks to "Tonight" (what's left, at most two rows, or "All done for today") and "Tomorrow · Monday" gets the room.
 ### 5.4 Travel awareness ("Dad's away")
 - Detection is configurable in the Sheet:
   - **Option A (recommended):** a Google calendar named "Travel" (Kind `travel`) where trips are
@@ -155,8 +166,10 @@ including subscribed public calendars, so no feed URLs are needed:
   - **Option B:** `travelKeywords` (default "flight, hotel") on personal calendars. Gmail's
     flight and hotel events join up into one trip when they're less than 18 hours apart.
 - Output: `away: [{ start, end, firstDay, lastDay, backTime, label }]`. The board shows a banner
-  on affected days ("Dad's away Tue–Thu, back Thursday night") and a pencil arrow with a plane
-  across those days in the week strip.
+  on affected days ("Dad's away Tue–Thu, back Thursday night"; "…, back tomorrow night" the day
+  before; "…, back tonight" on the last day; no "back" part when the trip has no flight home) and a
+  dashed pencil arrow with a plane across those days in the week grid ("Dad's away · back Thu
+  night").
 - **Never display work details.** Travel events are reduced to dates inside the script; their
   titles, places, and notes never leave the Sheet's Google account. A test checks the board JSON
   for leaks.
@@ -166,34 +179,39 @@ Each calendar in config gets a `kind` that changes how it renders:
 
 - **`personal` / `family`:** normal events.
 - **`sports`:** game-day treatment.
-  - On game day, show a header banner: "Steelers @ Bengals · tonight 8:20". Before kickoff it counts down; during the 3-hour game window it reads "Game on".
+  - On game day, a strip of gold washi tape with black hazard ends crosses the page under the header: "Steelers @ Bengals · 8:20 tonight · in 4h 40m". During the 3-hour game window it reads "Game on! · kicked off 4:25". After that the tape comes off. Tape colors are the calendar's color and accent from the Sheet.
   - In the week strip, show a small team-colored marker (black and gold for Steelers) with the kickoff time. **Text and colors only, no team logos.**
   - Late kickoffs (after 8 pm) get a "late game" tag, since that's a school-night consideration.
   - The feed marks games as "free" time. Never count them as busy or as conflicts.
 - **`holidays`:** all-day chips at the top of Today and the week strip.
   - A `hideObservances` option (default **true**) drops observance-only entries like "Black Friday" and keeps public holidays. Google labels these in the event description ("Public holiday" vs "Observance").
-  - Upcoming major holidays (Thanksgiving, Christmas) can show a "12 days to Thanksgiving" countdown chip.
+  - The next major holiday (Thanksgiving, Christmas, New Year's, Easter, the Fourth, Halloween, Mother's/Father's Day) shows a kraft-paper tag next to "Today": "11 days to Thanksgiving", "Thanksgiving is tomorrow". It only reaches as far as the board's window (`daysAhead`, 14 days).
 - **Collisions are features:** Broncos @ Steelers on Fri Nov 27, the day after Thanksgiving, should read as one fun day, not a cluttered one.
 
 Reference data at time of writing (for fixtures, not hardcoding): Steelers @ Bengals Sun Nov 15 8:20 pm, Steelers @ Eagles Sun Nov 22 4:25 pm, Broncos @ Steelers Fri Nov 27 3:00 pm; Veterans Day Nov 11, Thanksgiving Nov 26.
 
 ## 6. Other v1 panels
 - **Weather visual:** Open-Meteo (no API key), fetched by the script (cached 20 min) and included in the board.
-  - Current temp with a large condition icon (inline SVG icons, no icon font, so it renders on the old browser).
+  - Current temp with a large condition icon (inline SVG icons, no icon font, nothing extra to download).
   - **Next 12 hours strip:** temperature line plus rain-chance bars, drawn as inline SVG.
   - 3-day outlook: icon, high/low, rain %.
   - Morning call: "Jacket weather" / "Rain gear" / "T-shirt day", from simple config thresholds.
   - Sunrise and sunset times in small text.
+  - On an old board, hours that have already gone by are dropped from the strip.
 - **Clock:** ticks client-side. The countdown and "past event" fading update every minute without refetching.
 
 ## 7. Fridge behavior
-- **Auto-refresh:** poll the script's `board` every 5 minutes (cache-busted). Re-render only when it changes. The clock and countdowns tick locally every minute.
-- **Night mode:** go dark, with a minimal clock plus tomorrow's first event, between `nightStartHour` and `nightEndHour` (default 10 pm–6 am). Tap wakes it for 60 seconds.
-- **Offline / failure:** keep showing the last good data with a clear "Offline — last updated 7:40 am" badge.
-- **Stale data:** if the board's `generatedAt` is older than `staleAfterMinutes` (2 hours), show an amber banner.
-- **Lock:** an unlock screen with a passphrase field. A "Forget this device" option sits in a hidden settings corner (long-press the clock).
-- **Touch:** tap targets at least 64 px, no hover-only info, no tiny scrollbars, and no pinch-zoom dependency.
-- **Burn-in care:** shift the layout a few pixels every hour, and avoid static bright blocks at night.
+- **Auto-refresh:** poll the script's `board` every 5 minutes (cache-busted). Re-render only when `generatedAt` or the kitchen summary changes. The clock and countdowns tick locally on each minute boundary, and only the parts of the page whose HTML changed are touched. After a failed poll it retries in 1, 2, 4 minutes, then every 5. Waking from sleep (a long gap between ticks, or the page becoming visible) polls right away.
+- **Fetch:** plain `fetch` (the probe showed the fridge follows Apps Script's redirect). If fetch fails with a network/CORS error, it tries the script's JSONP door once and keeps using it if that worked.
+- **Night mode:** between `nightStartHour` and `nightEndHour` (default 10 pm–6 am) the page goes dark: a dim clock, the date, the next morning's first event (tomorrow's before midnight, today's after), the away note, the temperature. A tap wakes the full board in a dark theme for 60 seconds.
+- **Offline / failure:** keep showing the last good board (saved in the fridge's localStorage) with a red-pen "Offline · last updated 7:40 am" badge where "updated X min ago" was.
+- **Stale data:** if the board's `generatedAt` is older than `staleAfterMinutes` (2 hours), an amber banner across the top: "Heads up: this is from 12:25 pm (3 h ago). The fridge can't reach the calendar."
+- **Script problems:** a wrong key or a script that sends a newer `schemaVersion` show a plain banner (or a note, if there's no saved board yet) that says what to fix.
+- **Lock:** an unlock screen with a passphrase field. The fridge keeps the derived key (JWK), never the passphrase, plus the encrypted config so an offline reboot can still unlock. "Not set up yet" when `config.enc.json` isn't published.
+- **Hidden settings:** long-press the clock (1.2 s) for "Reload now" and "Forget this device" (two taps to confirm; clears the key, the saved config and the saved board).
+- **Touch:** tap targets at least 64 units, no hover-only info, no scroll anywhere, and no pinch-zoom dependency.
+- **Readable from 6 feet (in 1080-wide units):** clock 236, today's events 42, nothing under 20. On the fridge that is about 157/28/13 CSS px.
+- **Burn-in care:** the page drifts up to 5 units every hour (the night clock up to 45), and night mode has no bright blocks.
 
 ## 8. Kitchen list — "We're out" board (v1.5)
 
@@ -240,7 +258,15 @@ Dairy: milk, eggs, butter, cheese, yogurt · Produce: bananas, apples, berries, 
 
 ## 9. Optional modules
 
-Every panel beyond calendar + weather is a **module** with an on/off switch in `DASH_CONFIG.modules`. The layout reflows when modules are off. Build v1 with the module system in place, even though only calendar and weather ship.
+Every panel is a **module** (`src/modules/`): an `id`, the config switches it `needs`, an optional `active()` (does it have anything to show right now), and `render(board, now, ctx)` returning HTML for the box the layout gives it. The layout planner (`src/logic/layout.ts`) gives a missing module's room to Today. Switches live in `DASH_CONFIG.modules` and default to on:
+
+| Switch | Turns off |
+|---|---|
+| `calendar` | Today, Next Up, the week, the game tape and the away note (the weather fills the page) |
+| `week` | This Week |
+| `gameday` | the game-day tape (games still show as rows and pills) |
+| `weather` | the header's weather and the 12-hour strip |
+| `kitchen` | the "We're out" notepad |
 
 | Module | Source | Needs writes? | Phase |
 |---|---|---|---|
@@ -269,7 +295,7 @@ v3 modules get their data from a separate job (for example a scheduled Claude ta
 
 ## 11. Tech stack
 
-- **Front end:** Vite + TypeScript, **no framework**. `@vitejs/plugin-legacy` to compile for old Chromium. Plain CSS with variables; grid with flex fallbacks.
+- **Front end:** Vite + TypeScript, **no framework**. `@vitejs/plugin-legacy` stays on as a safety net, with both bundles aimed at Chrome 108 (the fridge) and no polyfills in the modern one. About 18 KB of gzipped JS and 5 KB of CSS. Plain CSS with variables, absolute boxes from the layout planner, inline SVG for icons and the weather chart, two self-hosted fonts.
 - **Google side:** Apps Script (V8) in `apps-script/Code.gs`: CalendarApp, UrlFetchApp (Open-Meteo), SpreadsheetApp, CacheService, LockService. Tested in Node by running the real file against fake Google services (`test/gas-harness.ts`).
 - **Build:** Node 22. `scripts/encrypt-config.ts` and `scripts/decrypt-check.ts` use `shared/crypto.ts`, the same WebCrypto code the browser runs.
 - **Tests:** Vitest.
@@ -286,9 +312,17 @@ fridgeboard/
   scripts/encrypt-config.ts      # DASH_CONFIG + DASH_PASSPHRASE → dist/config.enc.json
   scripts/decrypt-check.ts       # round-trips the published config
   src/                           # the dashboard
+    main.ts  app.ts  shell.ts    #   boot + unlock, the board's timers and DOM, the scaled stage
+    context.ts                   #   board + now → render context and module boxes (pure)
+    logic/                       #   pure rules: days, timeline, game, night/peek, away, holidays, freshness, layout
+    modules/                     #   one file per panel
+    screens/                     #   night, day agenda and other overlays, unlock
+    dev.ts                       #   ?fixture= and ?now= (dev server only)
   public/probe/index.html        # M0 fridge browser probe (hand-written ES5, copied as-is)
-  test/                          # Vitest: script harness, crypto, dist guard
-  design/                        # the three looks; A is the one we build
+  public/fonts/                  # Caveat + Patrick Hand (woff2, SIL OFL)
+  test/                          # Vitest: script harness, crypto, dist guard, board logic and rendering
+  test/fixtures/boards.ts        # fake boards made by the real Code.gs against fake calendars
+  design/                        # the three looks; A is the one we build; screens/ has M2 screenshots
   config/dash-config.example.json
   DASHBOARD_FRAME.md  CLAUDE.md  IDEAS.md  PROGRESS.md
 ```
@@ -299,6 +333,7 @@ fridgeboard/
 - `public/probe/` reports: user agent, viewport, devicePixelRatio, orientation, touch, WebCrypto (AES-GCM round trip, PBKDF2 150k timing, key export), fetch, localStorage, CSS grid, flex gap, CSS effects the paper look uses, ES levels, Intl time-zone formatting with both DST checks, the look's fonts, a text/plain POST, and a redirect-following fetch (`?ep=<script URL>` aims those at the real script).
 - Actions workflow deploys the probe to Pages.
 - **Done when:** Zuk opens the probe on the fridge and reports the results. Those numbers set the target screen size and the build target.
+- **Done Nov 5, 2026:** Tizen 7.0 / Family Hub 10.0, Chrome 108, viewport 721 x 1229 CSS px (screen 720 x 1280, DPR 1.5), touch + pointer events, flex gap and grid, Intl with both DST checks, PBKDF2 150k in 80 ms, fetch through the redirect, fonts and every look test render. CPU loop about 7x a laptop.
 
 **M1 — Google script + encrypted config**
 - `apps-script/Code.gs`: `setup()` (tabs, calendar list, starter buttons, key), `board` (calendar + weather + list summary), kitchen endpoints, `onEdit` for phone "Got it".
@@ -310,6 +345,7 @@ fridgeboard/
 - Unlock screen, header, Today, Next Up, This Week, day agenda, Tomorrow peek, Dad's-away banner, game-day tape, holiday chips, weather.
 - Auto-refresh, night mode, stale/offline states.
 - **Done when:** it looks right in screenshots at the fridge's resolution and works on the real fridge.
+- **Status (Nov 2026):** built and checked in screenshots at 720 x 1229 and 720 x 1280 (DPR 1.5), deployed; waiting on a look on the real fridge.
 
 **M2.5 — Kitchen list board (v1.5)**
 - The board UI, Need-list panel, undo toast, offline queue, sync badge. (The script side ships in M1.)

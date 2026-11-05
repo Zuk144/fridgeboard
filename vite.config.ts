@@ -3,7 +3,9 @@ import legacy from '@vitejs/plugin-legacy';
 import { resolve } from 'node:path';
 
 // The fridge (probe, Nov 5 2026) runs Samsung's Tizen browser on Chrome 108. plugin-legacy stays
-// on as a safety net, with both bundles aimed at Chrome 108 so the polyfills stay small.
+// on as a safety net, with both bundles aimed at Chrome 108. The modern bundle gets no polyfills:
+// Chrome 108 has everything the code uses (tsconfig's lib is ES2020), and the fridge CPU is slow,
+// so every kilobyte it doesn't parse helps.
 const FRIDGE = ['chrome >= 108'];
 
 /**
@@ -39,7 +41,7 @@ function devFixtures(): Plugin {
 
 export default defineConfig({
   base: './',
-  plugins: [legacy({ targets: FRIDGE, modernTargets: FRIDGE, modernPolyfills: true }), devFixtures()],
+  plugins: [legacy({ targets: FRIDGE, modernTargets: FRIDGE, modernPolyfills: false }), devFixtures()],
   build: {
     cssTarget: 'chrome108',
     // public/probe/ is copied as-is: the probe must stay hand-written ES5.

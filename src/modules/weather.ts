@@ -62,15 +62,17 @@ export function hourStrip(hours: Hour[], w: number, h: number): string {
 export const weatherModule: DashModule = {
   id: 'weather',
   needs: ['weather'],
-  render(board, _now, ctx) {
+  render(board, now, ctx) {
     const w = board.weather || {};
     const box = ctx.box;
     const x0 = ctx.stage.orient === 'landscape' ? 30 : 70;
     const cw = box.w - x0 - 30;
-    if (w.error || !w.hours || !w.hours.length) {
+    // An old board still holds hours that have gone by; start from the current hour.
+    const ahead = (w.hours || []).filter((x) => x.t > now - 3600000);
+    if (w.error || ahead.length < 3) {
       return `<div class="sec-title hand" style="${at(x0, 10)}font-size:44px;line-height:48px">Weather</div><div class="pencil" style="${at(x0, 70)}font-size:30px">The forecast didn't come through. It'll try again on the next update.</div>`;
     }
-    const hours = w.hours.slice(0, 12);
+    const hours = ahead.slice(0, 12);
     const chartH = Math.max(110, Math.min(360, box.h - 146));
     const step = cw / hours.length;
     const sun = w.today && w.today.sunrise ? `<span class="pencil wx-sun">sunrise ${esc(w.today.sunrise)} · sunset ${esc(w.today.sunset || '')}</span>` : '';

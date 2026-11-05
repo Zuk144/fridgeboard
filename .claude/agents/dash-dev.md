@@ -28,15 +28,17 @@ You build FRIDGEBOARD. `DASHBOARD_FRAME.md` is the spec. Read the relevant secti
 
 ## Old-browser rules (the fridge)
 
-- Target is old Chromium on Tizen. Until the M0 probe reports real numbers, assume Chrome ~63-era capability.
-- `@vitejs/plugin-legacy` on. No top-level await, no optional-chaining in untranspiled code, no CSS `:has()`, no container queries, no `aspect-ratio` without fallback, and no `gap` on flexbox without a margin fallback.
+- The M0 probe (Nov 5, 2026) found Samsung's Tizen browser on **Chrome 108**: ES2015+, async, optional chaining, flex gap, grid, CSS variables, clip-path, mask, filter, Intl time zones (both DST checks), WebCrypto (PBKDF2 150k in 80 ms), fetch through redirects. Use what Chrome 108 has and nothing newer (no CSS nesting, no `@container` style queries, no View Transitions).
+- Viewport: **720 x 1229 CSS px at DPR 1.5** (1080 x 1844 physical; 720 x 1280 when the browser bars hide). The page is drawn 1080 units wide and scaled by viewportWidth/1080; the height flexes.
+- The CPU is about **7x slower** than a laptop: no animations, no live SVG filters, touch only the DOM that changed.
+- `@vitejs/plugin-legacy` stays on as a safety net, with both bundles aimed at Chrome 108 and no modern polyfills.
 - Inline SVG for icons and the weather chart. No icon fonts, no canvas-heavy libraries, no web fonts that block render (system font stack, or one self-hosted font with `font-display: swap`).
 - Keep the JS bundle small (target under 150 KB gzipped). The fridge CPU is slow; measure decrypt + first render.
 
 ## Fridge UX rules
 
-- Readable from 6 feet: clock 96px+, today's events 32px+, nothing under 20px.
-- Tap targets 64px+. No hover-only info. No scroll inside scroll.
+- Readable from 6 feet, in 1080-wide design units: clock 96+ (it's 236), today's events 32+ (42), nothing under 20.
+- Tap targets 64+ units. No hover-only info. No scroll inside scroll.
 - The look is the paper planner (frame §2): cream paper by day (never pure white), dark at night. Keep ink colors at 4.5:1 or better on the paper.
 - Calendar colors come from config. Steelers = black and gold. **No team logos, only text and colors.**
 - Always show freshness ("updated 6 min ago"). Stale > 2h → amber banner. Fetch failed → "Offline · last updated 7:40 am."
@@ -59,7 +61,7 @@ what the script does with the results:
 A task is not done until **all** of these hold:
 1. `npm run typecheck` and `npm test` pass.
 2. Script changes pass the harness tests, and the config round trip (`encrypt-config` + `decrypt-check`) passes.
-3. Visual changes: open the built site at the fridge resolution, **take a screenshot, and look at it** before saying it works. Check day mode, night mode, a busy day, an empty day, and a game day. If it looks wrong, fix it first.
+3. Visual changes: open the site at the fridge's viewport (720x1229, deviceScaleFactor 1.5; `npm run dev` with `?fixture=`), **take a screenshot, and look at it** before saying it works. Check day mode, night mode, a busy day, an empty day, and a game day. If it looks wrong, fix it first.
 4. Nothing personal in the diff (`git diff` check for emails, calendar IDs, `script.google.com/macros/s/`, keys, coordinates).
 5. `DASHBOARD_FRAME.md` still matches reality.
 

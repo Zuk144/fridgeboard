@@ -15,3 +15,5 @@ Ideas not scheduled yet. Pitch in one line, tag the pillar or module, and don't 
 - **Who's driving board:** pickups and drop-offs for the week. (later)
 - **Sunrise/sunset sky band:** a thin gradient strip across the header that tracks daylight. (weather, polish)
 - **Siri / iPhone Shortcut for the kitchen list:** "Hey Siri, we're out of milk" calls the Apps Script endpoint. Works from iPhone, Watch, and Mac. (v1.5 stretch)
+- **"Dad leaves tomorrow" heads-up:** the evening before a trip, a small note under Tonight. (calendar, v1.1)
+- **Longer holiday lookahead:** let the script send the next few major holidays beyond `daysAhead` so "39 days to Christmas" can show. (calendar, v1.1)

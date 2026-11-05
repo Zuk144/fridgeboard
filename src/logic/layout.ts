@@ -143,7 +143,7 @@ function landscape(W: number, H: number, on: Set<SlotId>): Layout {
   if (hasW || hasK) {
     weekBottom = H - bottomH;
     if (hasW) L.weather = { x: left, y: weekBottom, w: hasK ? 600 : right, h: bottomH - 14 };
-    if (hasK) L.kitchen = { x: hasW ? left + 584 : W - 380, y: weekBottom + 20, w: 336, h: bottomH - 50 };
+    if (hasK) L.kitchen = { x: hasW ? left + 600 : W - 380, y: weekBottom + 20, w: 320, h: bottomH - 50 };
   }
   if (on.has('week')) L.week = { x: left, y: y + 26, w: right - 20, h: weekBottom - y - 26 };
   else if (L.weather) {

@@ -352,9 +352,10 @@ body {
 .ov-empty { position: absolute; font-size: 64px; color: var(--pencil); }
 .ov-close {
   position: absolute; right: 44px; top: 44px; width: 128px; height: 128px; box-sizing: border-box;
-  border-radius: 50%; border: 4px solid var(--red); color: var(--red);
-  font-size: 104px; line-height: 112px; text-align: center;
+  border-radius: 50%; border: 4px solid var(--red);
+  display: flex; align-items: center; justify-content: center;
 }
+.ov-close svg { stroke: var(--red); }
 .ov-done {
   position: absolute; left: 50%; bottom: 70px; width: 440px; height: 116px; margin-left: -220px; box-sizing: border-box;
   border: 4px solid var(--ink); border-radius: 58px;
@@ -366,7 +367,9 @@ body {
 .ag-cal { position: absolute; right: 0; top: 0; font-size: 26px; line-height: 50px; }
 .ag-row.past { opacity: 0.5; }
 .ag-row.two .ag-title { font-size: 36px; }
-.ov-pad { position: absolute; left: 90px; top: 250px; right: 90px; font-size: 56px; line-height: 76px; }
+.ov-body { position: absolute; left: 90px; top: 250px; right: 90px; }
+.ov-pad { font-size: 56px; line-height: 76px; }
+.ov-text { margin: 60px 0 0; font-size: 38px; line-height: 54px; color: var(--pencil); }
 .ov-pad ul { margin: 0; padding: 0 0 0 40px; }
 .ov-note { position: absolute; left: 90px; right: 90px; top: 900px; font-size: 38px; line-height: 54px; color: var(--pencil); }
 .ov-btn {
@@ -413,3 +416,7 @@ body {
 .ul-foot { position: absolute; left: 0; right: 0; bottom: 80px; font-size: 28px; line-height: 40px; }
 .ul-note { margin: 50px 110px 0; font-size: 40px; line-height: 58px; text-align: left; }
 .ul-note code { font-family: 'Patrick Hand', monospace; background: rgba(95, 94, 90, 0.12); padding: 0 8px; border-radius: 6px; }
+
+/* Landscape is a secondary layout (the fridge is portrait); keep its outlook on one line. */
+.landscape .day3 { font-size: 24px; margin-right: 8px; }
+.landscape .day3 b { font-size: 30px; margin-right: 4px; }

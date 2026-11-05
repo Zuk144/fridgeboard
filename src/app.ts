@@ -6,20 +6,18 @@
 import type { Board, DayKey } from '../shared/payload';
 import { MODULES } from './modules';
 import type { BaseCtx, Toggles } from './modules/types';
-import { addDays, makeClock, type Clock } from './logic/time';
-import { burnInShift, isNight, isPeek } from './logic/modes';
-import { freshness } from './logic/freshness';
-import { readableInk } from './logic/ink';
-import { planLayout, type SlotId } from './logic/layout';
+import { makeClock, type Clock } from './logic/time';
+import { burnInShift, isNight } from './logic/modes';
+import type { SlotId } from './logic/layout';
+import { buildCtx, inksFor, planBoard } from './context';
 import { renderNight } from './screens/night';
 import { renderOverlay, type Overlay } from './screens/overlays';
 import { renderNote } from './screens/unlock';
 import { ApiProblem } from './api';
 import { store } from './store';
 import type { Shell } from './shell';
-import { at } from './ui/html';
+import { at, esc } from './ui/html';
 
-export const PAPER = { day: '#F5EFE1', night: '#1B1E25' };
 const POLL_MS = 5 * 60000;
 const WAKE_MS = 60000;
 const OVERLAY_IDLE_MS = 2 * 60000;
@@ -150,33 +148,19 @@ export class App {
 
   private inksFor(b: Board, theme: 'day' | 'night'): Record<string, string> {
     const key = `${theme}|${b.calendars.map((c) => `${c.key}${c.color}${c.accent}`).join(',')}`;
-    if (!this.inkMemo || this.inkMemo.key !== key) {
-      const inks: Record<string, string> = {};
-      for (const c of b.calendars) {
-        const base = c.kind === 'sports' ? c.accent || '#101820' : c.color;
-        inks[c.key] = readableInk(base, PAPER[theme], 4.5);
-      }
-      this.inkMemo = { key, inks };
-    }
+    if (!this.inkMemo || this.inkMemo.key !== key) this.inkMemo = { key, inks: inksFor(b, theme) };
     return this.inkMemo.inks;
   }
 
   private baseCtx(b: Board, now: number): BaseCtx {
-    const clock = this.clockFor(b);
-    const local = clock(now);
-    const theme = isNight(local.hour, b.display) ? 'night' : 'day';
-    return {
-      now, clock, local,
-      today: local.dayKey,
-      tomorrow: addDays(local.dayKey, 1),
+    return buildCtx(b, now, {
       stage: this.o.shell.stage,
-      theme,
-      peek: isPeek(local.hour, b.display),
-      fresh: freshness(b.generatedAt, now, this.offline, b.display.staleAfterMinutes, clock),
-      inks: this.inksFor(b, theme),
       toggles: this.o.toggles,
+      offline: this.offline,
       problem: this.problem,
-    };
+      clock: this.clockFor(b),
+      inks: (theme) => this.inksFor(b, theme),
+    });
   }
 
   private put(key: string, el: HTMLElement, html: string): void {
@@ -192,10 +176,15 @@ export class App {
     if (shell.fit(shift.x, shift.y)) this.resetDom();
     const b = this.board;
     if (!b) {
-      this.resetDom();
-      shell.show(this.offline
-        ? renderNote('Can\'t reach the calendar', '<p>The fridge couldn\'t get the board from Google yet. It keeps trying every minute or so.</p>')
-        : renderNote('Getting the calendar…', '<p>Asking Google for today\'s board.</p>'));
+      const msg = this.problem
+        ? renderNote('The calendar didn\'t come through', `<p>${esc(this.problem)}</p>`)
+        : this.offline
+          ? renderNote('Can\'t reach the calendar', '<p>The fridge couldn\'t get the board from Google yet. It keeps trying every minute or so.</p>')
+          : renderNote('Getting the calendar…', '<p>Asking Google for today\'s board.</p>');
+      if (this.html.waiting !== msg) {
+        this.html = { waiting: msg };
+        shell.show(msg);
+      }
       return;
     }
     const ctx = this.baseCtx(b, now);
@@ -223,28 +212,26 @@ export class App {
     this.put('night', dom.night, '');
     dom.slots.style.display = '';
 
-    const active = new Set<SlotId>();
-    for (const m of MODULES) {
-      if (!m.needs.every((t) => ctx.toggles[t])) continue;
-      if (m.active && !m.active(b, now, ctx)) continue;
-      active.add(m.id);
-    }
-    const layout = planLayout(ctx.stage, active);
-    for (const m of MODULES) {
-      const el = this.slotEls[m.id];
+    const shown = new Set<SlotId>();
+    for (const part of planBoard(b, now, ctx).parts) {
+      const el = this.slotEls[part.id];
       if (!el) continue;
-      const box = layout[m.id];
-      if (!box || !active.has(m.id)) {
-        if (el.style.display !== 'none') el.style.display = 'none';
-        this.put(m.id, el, '');
-        continue;
-      }
-      const style = `${at(box.x, box.y, box.w, box.h)}`;
-      if (this.html[`${m.id}:style`] !== style) {
-        this.html[`${m.id}:style`] = style;
+      shown.add(part.id);
+      const style = at(part.box.x, part.box.y, part.box.w, part.box.h);
+      if (this.html[`${part.id}:style`] !== style) {
+        this.html[`${part.id}:style`] = style;
         el.setAttribute('style', style);
       }
-      this.put(m.id, el, m.render(b, now, { ...ctx, box, layout }));
+      this.put(part.id, el, part.html);
+    }
+    for (const m of MODULES) {
+      const el = this.slotEls[m.id];
+      if (!el || shown.has(m.id)) continue;
+      if (this.html[`${m.id}:style`] !== 'display:none') {
+        this.html[`${m.id}:style`] = 'display:none';
+        el.setAttribute('style', 'display:none');
+      }
+      this.put(m.id, el, '');
     }
     this.put('ov', dom.overlay, this.overlay ? renderOverlay(this.overlay, b, now, ctx) : '');
   }
