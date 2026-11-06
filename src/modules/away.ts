@@ -13,6 +13,6 @@ export const awayModule: DashModule = {
   render(board, _now, ctx) {
     const r = awayOn(board.away, ctx.today);
     if (!r) return '';
-    return `<div class="away-note">${plane(ctx.stage.orient === 'landscape' ? 40 : 46)}<span class="hand">${esc(awayBanner(r, ctx.today))}</span></div>`;
+    return `<div class="away-note">${plane(46)}<span class="hand">${esc(awayBanner(r, ctx.today))}</span></div>`;
   },
 };

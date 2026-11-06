@@ -69,12 +69,11 @@ export const weekModule: DashModule = {
   id: 'week',
   needs: ['calendar', 'week'],
   render(board, now, ctx) {
-    const land = ctx.stage.orient === 'landscape';
     const box = ctx.box;
     const week = rollingWeek(board.events, ctx.today);
     const days = week.map((b) => b.day);
-    const gridX = land ? 10 : 48;
-    const gridTop = land ? 84 : 92;
+    const gridX = 48;
+    const gridTop = 92;
     const gridW = box.w - gridX * 2;
     const gridH = box.h - gridTop - 14;
     const colW = gridW / 7;
@@ -99,7 +98,7 @@ export const weekModule: DashModule = {
       cols += column(board, b, i, i * colW, colW, gridH, maxLines, now, ctx);
       if (i > 0) seps += `<div class="wsep" style="${at(i * colW, 8, 2, gridH - 16)}"></div>`;
     });
-    return `<div class="sec-title hand" style="${at(land ? 20 : 70, 0)}font-size:${land ? 64 : 72}px;line-height:80px">This week</div>` +
+    return `<div class="sec-title hand" style="${at(70, 0)}font-size:72px;line-height:80px">This week</div>` +
       `<div class="grid" style="${at(gridX, gridTop, gridW, gridH)}">${seps}${cols}${trip}</div>`;
   },
 };

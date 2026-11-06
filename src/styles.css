@@ -1,5 +1,5 @@
 /*
- * Paper planner (frame §2). Everything inside .stage is in design units: 1080 wide in portrait,
+ * Paper planner (frame §2). Everything inside .stage is in design units: 1080 wide,
  * scaled to the viewport by the Shell. The fridge's 720 CSS px wide screen shows 1 unit as
  * 2/3 CSS px, which is 1 physical pixel at its DPR of 1.5.
  */
@@ -149,15 +149,6 @@ body {
 .wear .pen-circle { position: absolute; right: -16px; top: 0; stroke: var(--red); }
 .wear-text { position: absolute; right: 34px; top: 18px; color: var(--red); transform: rotate(-3deg); white-space: nowrap; line-height: 56px; }
 
-.landscape .hd-clock { left: 60px; top: 4px; font-size: 196px; line-height: 168px; }
-.landscape .hd-clock .ampm { font-size: 62px; }
-.landscape .hd-date { left: 60px; top: 172px; }
-.landscape .hd-date .hand { font-size: 58px; line-height: 64px; }
-.landscape .hd-fresh { left: 62px; top: 256px; }
-.landscape .hd-wx { right: 30px; top: 10px; width: 380px; }
-.landscape .wx-top { height: 112px; }
-.landscape .wx-temp { font-size: 120px; line-height: 120px; }
-.landscape .wx-line { font-size: 30px; }
 
 /* weather icons */
 .wx-icon .i-sun, .wx-icon .i-bolt { stroke: var(--sun); }
@@ -184,11 +175,6 @@ body {
 .tape-on .tape-when { font-size: 62px; line-height: 60px; }
 .tape-sub { font-size: 30px; line-height: 38px; white-space: nowrap; }
 .late-tag { display: inline-block; font-size: 21px; line-height: 30px; padding: 0 10px; border-radius: 5px; letter-spacing: 2px; vertical-align: 3px; margin-left: 10px; }
-.landscape .tape { left: 24px; right: 24px; top: 10px; height: 104px; }
-.landscape .tape-ball { left: 76px; top: 26px; }
-.landscape .tape-title { left: 146px; right: 360px; top: 12px; font-size: 54px; line-height: 80px; }
-.landscape .tape-right { right: 76px; width: 300px; top: 6px; }
-.landscape .tape-when { font-size: 48px; line-height: 52px; }
 
 /* ------------------------------------------------------------ Dad's away note */
 
@@ -201,8 +187,6 @@ body {
 }
 .away-note .plane { stroke: var(--ink); flex: none; margin-right: 18px; }
 .away-note .hand { font-size: 48px; line-height: 64px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.landscape .away-note { left: 40px; right: 40px; height: 58px; }
-.landscape .away-note .hand { font-size: 42px; }
 
 /* ------------------------------------------------------------ Today */
 
@@ -298,7 +282,6 @@ body {
 .trip { position: absolute; }
 .trip-arrow { display: block; stroke: var(--ink); }
 .trip-text { font-size: 26px; line-height: 34px; white-space: nowrap; margin-left: 6px; }
-.landscape .wk .e { font-size: 22px; padding: 0 6px; }
 
 /* ------------------------------------------------------------ weather strip */
 
@@ -417,6 +400,3 @@ body {
 .ul-note { margin: 50px 110px 0; font-size: 40px; line-height: 58px; text-align: left; }
 .ul-note code { font-family: 'Patrick Hand', monospace; background: rgba(95, 94, 90, 0.12); padding: 0 8px; border-radius: 6px; }
 
-/* Landscape is a secondary layout (the fridge is portrait); keep its outlook on one line. */
-.landscape .day3 { font-size: 24px; margin-right: 8px; }
-.landscape .day3 b { font-size: 30px; margin-right: 4px; }

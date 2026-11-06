@@ -1,7 +1,6 @@
 /**
- * Talks to the Google script. Plain fetch (the probe showed the fridge follows Apps Script's
- * redirect fine); JSONP via a script tag only if fetch fails with a network/CORS error.
- * Never logs the URL, the key, or anything the script sends back.
+ * Talks to the Google script with plain fetch (the fridge probe showed it follows Apps Script's
+ * redirect fine). Never logs the URL, the key, or anything the script sends back.
  */
 import { SCHEMA_VERSION, type Board, type FridgeConfig } from '../shared/payload';
 
@@ -15,33 +14,11 @@ export class ApiProblem extends Error {
 }
 
 const TIMEOUT_MS = 30000;
-let preferJsonp = false;
-let seq = 0;
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('timeout')), ms);
     p.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
-  });
-}
-
-function jsonp(url: string, ms: number): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const name = `fbcb${++seq}_${Date.now().toString(36)}`;
-    const w = window as unknown as Record<string, unknown>;
-    const s = document.createElement('script');
-    let done = false;
-    const finish = () => {
-      done = true;
-      clearTimeout(timer);
-      w[name] = () => {}; // a late reply must not throw
-      if (s.parentNode) s.parentNode.removeChild(s);
-    };
-    const timer = setTimeout(() => { if (!done) { finish(); reject(new Error('timeout')); } }, ms);
-    w[name] = (data: unknown) => { if (!done) { finish(); resolve(data); } };
-    s.onerror = () => { if (!done) { finish(); reject(new TypeError('jsonp failed')); } };
-    s.src = `${url}&callback=${name}`;
-    document.head.appendChild(s);
   });
 }
 
@@ -65,17 +42,7 @@ export function checkBoard(data: unknown): Board {
 
 export async function fetchBoard(cfg: FridgeConfig, now: number): Promise<Board> {
   const url = `${cfg.endpointUrl}?action=board&k=${encodeURIComponent(cfg.key)}&cb=${now}`;
-  if (!preferJsonp) {
-    try {
-      const res = await withTimeout(fetch(url, { redirect: 'follow', credentials: 'omit' }), TIMEOUT_MS);
-      if (!res.ok) throw new Error(`http ${res.status}`);
-      return checkBoard(await res.json());
-    } catch (e) {
-      if (!(e instanceof TypeError)) throw e;
-      // Network or CORS trouble: try the JSONP door once before calling it offline.
-    }
-  }
-  const data = await jsonp(url, TIMEOUT_MS);
-  preferJsonp = true;
-  return checkBoard(data);
+  const res = await withTimeout(fetch(url, { redirect: 'follow', credentials: 'omit' }), TIMEOUT_MS);
+  if (!res.ok) throw new Error(`http ${res.status}`);
+  return checkBoard(await res.json());
 }

@@ -31,7 +31,7 @@ You build FRIDGEBOARD. `DASHBOARD_FRAME.md` is the spec. Read the relevant secti
 - The M0 probe (Nov 5, 2026) found Samsung's Tizen browser on **Chrome 108**: ES2015+, async, optional chaining, flex gap, grid, CSS variables, clip-path, mask, filter, Intl time zones (both DST checks), WebCrypto (PBKDF2 150k in 80 ms), fetch through redirects. Use what Chrome 108 has and nothing newer (no CSS nesting, no `@container` style queries, no View Transitions).
 - Viewport: **720 x 1229 CSS px at DPR 1.5** (1080 x 1844 physical; 720 x 1280 when the browser bars hide). The page is drawn 1080 units wide and scaled by viewportWidth/1080; the height flexes.
 - The CPU is about **7x slower** than a laptop: no animations, no live SVG filters, touch only the DOM that changed.
-- `@vitejs/plugin-legacy` stays on as a safety net, with both bundles aimed at Chrome 108 and no modern polyfills.
+- The build targets Chrome 108 directly: one modern bundle, no `@vitejs/plugin-legacy`, no polyfills. Portrait only; a wider screen gets the same page letterboxed. If the probe ever reports an older browser, bring the legacy plugin back.
 - Inline SVG for icons and the weather chart. No icon fonts, no canvas-heavy libraries, no web fonts that block render (system font stack, or one self-hosted font with `font-display: swap`).
 - Keep the JS bundle small (target under 150 KB gzipped). The fridge CPU is slow; measure decrypt + first render.
 

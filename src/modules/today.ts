@@ -25,7 +25,6 @@ interface Metrics {
 }
 
 const PORTRAIT: Metrics = { titleX: 70, rowH: 76, font: 42, timeX: 40, timeW: 150, marginX: 210, textX: 232, chipH: 62 };
-const LANDSCAPE: Metrics = { titleX: 60, rowH: 70, font: 38, timeX: 26, timeW: 140, marginX: 186, textX: 206, chipH: 56 };
 
 function eventRow(board: Board, e: BoardEvent, cls: string, highlight: boolean, top: number, m: Metrics, right: number, ctx: Ctx): string {
   const sports = e.kind === 'sports';
@@ -120,26 +119,25 @@ export const todayModule: DashModule = {
   id: 'today',
   needs: ['calendar'],
   render(board, now, ctx) {
-    const land = ctx.stage.orient === 'landscape';
-    const m = land ? LANDSCAPE : PORTRAIT;
+    const m = PORTRAIT;
     const cd = holidayCountdown(board.events, ctx.today);
     const tag = cd ? `<span class="kraft-hole"></span>${esc(cd.text)}` : '';
     const H = ctx.box.h;
     if (!ctx.peek) {
       return section(board, now, ctx, m, {
-        day: ctx.today, title: 'Today', titleSize: land ? 80 : 92, tag, y: 0, h: H, mode: 'today', showChips: true,
+        day: ctx.today, title: 'Today', titleSize: 92, tag, y: 0, h: H, mode: 'today', showChips: true,
         emptyText: 'Nothing on today', emptyHint: 'Put plans on the Family calendar and they show up here.',
       });
     }
     // Tomorrow peek: a short "Tonight" on top, Tomorrow gets the rest.
     const left = bucketDay(board.events, ctx.today).timed.filter((e) => eventState(e, now) !== 'past').length;
     const tonightRows = Math.max(1, Math.min(left, 2));
-    const tonightH = (land ? 72 : 82) + 4 + (left ? tonightRows : 1) * m.rowH + 8;
+    const tonightH = 82 + 4 + (left ? tonightRows : 1) * m.rowH + 8;
     return section(board, now, ctx, m, {
-      day: ctx.today, title: 'Tonight', titleSize: land ? 60 : 66, tag, y: 0, h: tonightH, mode: 'tonight', showChips: false,
+      day: ctx.today, title: 'Tonight', titleSize: 66, tag, y: 0, h: tonightH, mode: 'tonight', showChips: false,
       emptyText: 'All done for today', emptyHint: '',
     }) + section(board, now, ctx, m, {
-      day: ctx.tomorrow, title: 'Tomorrow', sub: DOW_LONG[dowOf(ctx.tomorrow)], titleSize: land ? 80 : 92, tag: '', y: tonightH + 8, h: H - tonightH - 8, mode: 'ahead', showChips: true,
+      day: ctx.tomorrow, title: 'Tomorrow', sub: DOW_LONG[dowOf(ctx.tomorrow)], titleSize: 92, tag: '', y: tonightH + 8, h: H - tonightH - 8, mode: 'ahead', showChips: true,
       emptyText: 'Nothing on tomorrow', emptyHint: '',
     });
   },

@@ -31,10 +31,13 @@ const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y <
 
 describe('stage', () => {
   it('draws the fridge at 1080 units wide with the height its browser gives', () => {
-    expect(FRIDGE).toMatchObject({ orient: 'portrait', W: 1080, H: 1844, offX: 0, offY: 0 });
+    expect(FRIDGE).toMatchObject({ W: 1080, H: 1844, offX: 0, offY: 0 });
     expect(FRIDGE.scale).toBeCloseTo(2 / 3, 5);
     expect(stageFor(720, 1280)).toMatchObject({ W: 1080, H: 1920 });
-    expect(stageFor(1920, 1080)).toMatchObject({ orient: 'landscape', W: 1920, H: 1080, scale: 1 });
+    // A laptop gets the same portrait page, letterboxed.
+    const laptop = stageFor(1920, 1080);
+    expect(laptop).toMatchObject({ W: 1080, H: 1600 });
+    expect(laptop.offX).toBeGreaterThan(0);
     // A squat portrait window letterboxes instead of squashing the layout.
     const ipad = stageFor(820, 1000);
     expect(ipad.H).toBe(1600);
@@ -45,8 +48,8 @@ describe('stage', () => {
 describe('layout', () => {
   const all: SlotId[] = ['stale', 'header', 'game', 'away', 'today', 'nextup', 'week', 'weather', 'kitchen'];
 
-  for (const stage of [FRIDGE, stageFor(720, 1280), stageFor(1920, 1080)]) {
-    it(`keeps every box on the page and apart (${stage.orient} ${stage.W}x${stage.H})`, () => {
+  for (const stage of [FRIDGE, stageFor(720, 1280), stageFor(820, 1000)]) {
+    it(`keeps every box on the page and apart (${stage.W}x${stage.H})`, () => {
       const L = planLayout(stage, new Set(all));
       const boxes = Object.entries(L) as [SlotId, Box][];
       for (const [, b] of boxes) {
@@ -174,11 +177,6 @@ describe('every fixture renders', () => {
     expect(cal.ids).toEqual(['header', 'weather', 'kitchen']);
   });
 
-  it('renders in landscape too', () => {
-    const r = render('gameday', { stage: stageFor(1920, 1080) });
-    expect(r.ids).toContain('week');
-    expect(r.plan.layout.week!.x).toBeGreaterThanOrEqual(1000);
-  });
 });
 
 describe('safety', () => {

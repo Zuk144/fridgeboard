@@ -65,7 +65,7 @@ export const weatherModule: DashModule = {
   render(board, now, ctx) {
     const w = board.weather || {};
     const box = ctx.box;
-    const x0 = ctx.stage.orient === 'landscape' ? 30 : 70;
+    const x0 = 70;
     const cw = box.w - x0 - 30;
     // An old board still holds hours that have gone by; start from the current hour.
     const ahead = (w.hours || []).filter((x) => x.t > now - 3600000);

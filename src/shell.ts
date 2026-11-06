@@ -23,17 +23,17 @@ export class Shell {
     return stageFor(window.innerWidth || de.clientWidth || 1080, window.innerHeight || de.clientHeight || 1920);
   }
 
-  /** Sizes and places the stage. Returns true when the design size or orientation changed. */
+  /** Sizes and places the stage. Returns true when the design size changed. */
   fit(shiftX = this.shift.x, shiftY = this.shift.y): boolean {
     const st = this.measure();
-    const changed = st.W !== this.stage.W || st.H !== this.stage.H || st.orient !== this.stage.orient;
+    const changed = st.W !== this.stage.W || st.H !== this.stage.H;
     this.stage = st;
     this.shift = { x: shiftX, y: shiftY };
     const s = this.el.style;
     s.width = `${st.W}px`;
     s.height = `${st.H}px`;
     s.transform = `translate(${Math.round(st.offX + shiftX * st.scale)}px,${Math.round(st.offY + shiftY * st.scale)}px) scale(${st.scale})`;
-    this.el.className = `stage ${st.orient}${this.theme === 'night' ? ' theme-night' : ' theme-day'}`;
+    this.el.className = `stage${this.theme === 'night' ? ' theme-night' : ' theme-day'}`;
     return changed;
   }
 
@@ -61,7 +61,7 @@ export class Shell {
 
   /** Makes sure the board's containers exist; rebuilds them when the stage size changed. */
   ensureBoard(): { slots: HTMLElement; overlay: HTMLElement; night: HTMLElement; fresh: boolean } {
-    const sig = `${this.stage.orient}:${this.stage.W}`;
+    const sig = `${this.stage.W}`;
     let fresh = false;
     if (this.bindingFor !== sig || !this.el.querySelector('.slots')) {
       this.el.innerHTML = `${this.binding()}<div class="slots"></div><div class="ov-host"></div><div class="night-host"></div>`;

@@ -10,8 +10,8 @@ For build work, use the `dash-dev` agent (`.claude/agents/dash-dev.md`). It has 
 
 1. **No personal data in the repo, ever.** The repo is public. The script URL, its key, and the passphrase live only in GitHub Secrets (`DASH_CONFIG`, `DASH_PASSPHRASE`) and a local, gitignored `.env.local`. Calendar choices and home location live in Zuk's Sheet. Fixtures are fake.
 2. **Only encrypted config gets published.** `dist/` holds the page and `config.enc.json`, nothing readable about the family. A test enforces it.
-3. **Fridge-browser safe.** The fridge runs Samsung's Tizen browser on Chrome 108 (M0 probe) with a CPU about 7x slower than a laptop. Build through `@vitejs/plugin-legacy` (kept as a safety net). No framework-heavy dependencies, no hover-only UI, cheap repaints.
-4. **Not done until it's seen.** Visual work needs a screenshot at the fridge's viewport: 720×1229 CSS px at deviceScaleFactor 1.5 (and 720×1280, when its browser bars hide). Landscape 1920×1080 is secondary.
+3. **Fridge-browser safe.** The fridge runs Samsung's Tizen browser on Chrome 108 (M0 probe) with a CPU about 7x slower than a laptop. The build targets Chrome 108 directly (one modern bundle, no legacy copy). No framework-heavy dependencies, no hover-only UI, cheap repaints.
+4. **Not done until it's seen.** Visual work needs a screenshot at the fridge's viewport: 720×1229 CSS px at deviceScaleFactor 1.5 (and 720×1280, when its browser bars hide). The board is portrait only; a wider screen gets the same page, letterboxed.
 5. **Work stays off the fridge.** Travel shows only "Dad's away." Strip work titles, locations, and descriptions in the script, not in the UI.
 
 ## Commands (fill in as they exist)

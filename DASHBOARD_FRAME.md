@@ -22,9 +22,9 @@ It is read at a glance from across the kitchen and tapped with wet or messy hand
 3. **Private by default.** The page is on the public internet, but nothing personal is published there. Family data goes straight from Google to the fridge, and only with a key that ships inside an encrypted config. The page shows nothing until it's unlocked.
 4. **Never lies about freshness.** If data is stale or a feed failed, the page says so plainly instead of quietly showing old info.
 5. **Works on the fridge's browser.** Plain, sturdy front-end code with no framework. The M0 probe
-   (Nov 5, 2026) found Samsung's Tizen browser on **Chrome 108**, newer than first feared; the build
-   still goes through `@vitejs/plugin-legacy` as a safety net. The fridge CPU is about 7x slower
-   than a laptop, so repaints stay cheap.
+   (Nov 5, 2026) found Samsung's Tizen browser on **Chrome 108**, newer than first feared, so the
+   build targets it directly (the legacy bundle and polyfills were dropped on Nov 6). The fridge
+   CPU is about 7x slower than a laptop, so repaints stay cheap.
 
 ### Look: paper planner (decided Nov 5, 2026)
 
@@ -49,8 +49,8 @@ canvas linked in `PROGRESS.md`):
 **As built (M2, Nov 2026).** The page is drawn on a stage 1080 units wide and scaled to the
 screen. The fridge shows 720 x 1229 CSS px at DPR 1.5 (1080 x 1844 units, 1080 x 1920 when its
 browser bars hide), so one unit is one physical pixel there and the type sizes in §7 are in these
-units. The height flexes; the Today panel takes up the slack. A 1920-wide landscape arrangement
-exists for other screens but isn't polished. Calendar inks come from the Sheet and are nudged
+units. The height flexes; the Today panel takes up the slack. The board is portrait only; a wider
+screen (a laptop) gets the same page, letterboxed. Calendar inks come from the Sheet and are nudged
 darker (lighter at night) until they read at 4.5:1 on the paper.
 
 ## 3. Architecture ($0: Google + GitHub)
@@ -202,7 +202,7 @@ Reference data at time of writing (for fixtures, not hardcoding): Steelers @ Ben
 
 ## 7. Fridge behavior
 - **Auto-refresh:** poll the script's `board` every 5 minutes (cache-busted). Re-render only when `generatedAt` or the kitchen summary changes. The clock and countdowns tick locally on each minute boundary, and only the parts of the page whose HTML changed are touched. After a failed poll it retries in 1, 2, 4 minutes, then every 5. Waking from sleep (a long gap between ticks, or the page becoming visible) polls right away.
-- **Fetch:** plain `fetch` (the probe showed the fridge follows Apps Script's redirect). If fetch fails with a network/CORS error, it tries the script's JSONP door once and keeps using it if that worked.
+- **Fetch:** plain `fetch` (the probe showed the fridge follows Apps Script's redirect). A failed fetch counts as offline: the last good board stays up with the offline badge. (The script still answers JSONP-style `callback=` requests, but the page no longer uses them.)
 - **Night mode:** between `nightStartHour` and `nightEndHour` (default 10 pm–6 am) the page goes dark: a dim clock, the date, the next morning's first event (tomorrow's before midnight, today's after), the away note, the temperature. A tap wakes the full board in a dark theme for 60 seconds.
 - **Offline / failure:** keep showing the last good board (saved in the fridge's localStorage) with a red-pen "Offline · last updated 7:40 am" badge where "updated X min ago" was.
 - **Stale data:** if the board's `generatedAt` is older than `staleAfterMinutes` (2 hours), an amber banner across the top: "Heads up: this is from 12:25 pm (3 h ago). The fridge can't reach the calendar."
@@ -295,7 +295,7 @@ v3 modules get their data from a separate job (for example a scheduled Claude ta
 
 ## 11. Tech stack
 
-- **Front end:** Vite + TypeScript, **no framework**. `@vitejs/plugin-legacy` stays on as a safety net, with both bundles aimed at Chrome 108 (the fridge) and no polyfills in the modern one. About 18 KB of gzipped JS and 5 KB of CSS. Plain CSS with variables, absolute boxes from the layout planner, inline SVG for icons and the weather chart, two self-hosted fonts.
+- **Front end:** Vite + TypeScript, **no framework**. One modern bundle built for Chrome 108 (the fridge), no legacy copy or polyfills: about 17 KB of gzipped JS and 5 KB of CSS. Plain CSS with variables, absolute boxes from the layout planner, inline SVG for icons and the weather chart, two self-hosted fonts.
 - **Google side:** Apps Script (V8) in `apps-script/Code.gs`: CalendarApp, UrlFetchApp (Open-Meteo), SpreadsheetApp, CacheService, LockService. Tested in Node by running the real file against fake Google services (`test/gas-harness.ts`).
 - **Build:** Node 22. `scripts/encrypt-config.ts` and `scripts/decrypt-check.ts` use `shared/crypto.ts`, the same WebCrypto code the browser runs.
 - **Tests:** Vitest.

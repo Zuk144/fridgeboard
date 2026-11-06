@@ -20,7 +20,7 @@ Updated Nov 5, 2026 (M2 built). A fresh session should read this file first, the
 - **Repo:** public `Zuk144/fridgeboard`, created by Zuk (with Claude in Chrome on his laptop).
 - **Target screen (from the probe):** 720 x 1229 CSS px portrait at DPR 1.5, Chrome 108. The page
   is drawn 1080 units wide and scaled to fit; its height flexes between about 1844 and 1920 units.
-  Landscape 1920 x 1080 works but is secondary.
+  Portrait only; a laptop-shaped screen gets the same page, letterboxed.
 
 ## Done
 
@@ -39,7 +39,7 @@ Updated Nov 5, 2026 (M2 built). A fresh session should read this file first, the
   zone is New York); CPU loop 70 ms vs about 10 on a laptop (~7x slower); AES-GCM, PBKDF2 150k in
   80 ms, JWK store; text/plain POST 200 in 447 ms and redirect-following fetch both pass; all six
   web fonts and every look test render.
-- **M0 skeleton:** Vite 5 + TypeScript + `@vitejs/plugin-legacy` (targets Chrome ≥ 61), Vitest,
+- **M0 skeleton:** Vite 5 + TypeScript + `@vitejs/plugin-legacy` (targets Chrome ≥ 61; removed Nov 6), Vitest,
   ESLint, `shared/payload.ts` (schemaVersion 1), placeholder `index.html`, dist guard test.
 - **M1 Google side** (`apps-script/Code.gs`): `setup()` builds Settings, Calendars (auto-listed
   from your Google account), Items (the 28 starter buttons), Needed, and Log tabs, plus a 64-char
@@ -70,23 +70,23 @@ Updated Nov 5, 2026 (M2 built). A fresh session should read this file first, the
     pointing at the Sheet (the real list board is M2.5). Long-press the clock → Reload / Forget
     this device.
   - Fridge behavior: 5-minute polling (re-render only on a new board), minute ticks that touch
-    only changed DOM, retry backoff, JSONP fallback, last good board kept for offline, offline
+    only changed DOM, retry backoff, last good board kept for offline, offline
     badge, amber stale banner, night mode 10 pm–6 am (dim clock + next morning's first event, tap
     wakes the dark board for 60 s), Tomorrow peek from 6 pm, hourly burn-in drift, overlays close
     after 2 minutes.
   - Modules with switches in `DASH_CONFIG.modules` (`calendar`, `week`, `gameday`, `weather`,
     `kitchen`; all on unless set false); the layout gives a missing module's room to Today.
   - Self-hosted Caveat 700 + Patrick Hand (woff2, OFL in `public/fonts/OFL.txt`), a 22 KB grain PNG.
-  - Build: both plugin-legacy bundles aimed at Chrome 108, no modern polyfills. The fridge loads
-    about 18 KB gzipped JS + 5 KB CSS.
+  - Build: one modern bundle for Chrome 108, no legacy copy or polyfills (trimmed Nov 6). The
+    fridge loads about 17 KB gzipped JS + 5 KB CSS.
   - Dev only: `?fixture=<name>` (fake boards made by the real Code.gs in the harness,
     `test/fixtures/boards.ts`), `?now=`, `?offline=1`, `?off=`, `?open=`. Not in the build.
-- Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` (93 tests: script
+- Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` (92 tests after the Nov 6 trim; was 93: script
   harness, crypto, dist guard, 26 board-logic tests, 33 render/layout tests over every fixture).
-- Screenshots of every state at 720 x 1229 and 720 x 1280 (DPR 1.5) and landscape were looked at
+- Screenshots of every state at 720 x 1229 and 720 x 1280 (DPR 1.5) were looked at
   and fixed; four are committed in `design/screens/`. A headless run of the built site checked the
-  real flow: not set up, unlock, wrong passphrase, stored key on reload, offline, stale, JSONP
-  fallback, bad key, forget this device.
+  real flow: not set up, unlock, wrong passphrase, stored key on reload, offline, stale, bad key,
+  forget this device. (The JSONP fallback it also checked was removed on Nov 6.)
 
 ## Setup status (Nov 5)
 
@@ -222,7 +222,6 @@ Then tell Claude "secrets are in". Never paste the URL, key, or passphrase into 
   the Sheet if the kitchen is still busy at 10.
 - **Christmas countdown:** the tag only sees as far as the board's 14 days (`daysAhead`). A longer
   holiday lookahead needs a small script change; parked in `IDEAS.md`.
-- **Landscape:** works, not polished. Only matters if the board is ever shown on a landscape screen.
 
 ## Next
 
