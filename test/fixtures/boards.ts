@@ -8,6 +8,7 @@
  */
 import { loadCode, at, type FakeCalendarSpec, type FakeEventSpec } from '../gas-harness';
 import type { Board } from '../../shared/payload';
+import { TV_DAYS, espnFetch } from './espn';
 
 const NY = 'America/New_York';
 
@@ -187,6 +188,8 @@ export interface Scenario {
   kitchen: string[];
   /** Personal calendars empty, only holidays and the Steelers (how the real calendars look today). */
   sparse?: boolean;
+  /** Fake ESPN scoreboards for "On TV tonight" (test/fixtures/espn.ts); none = no games anywhere. */
+  tv?: keyof typeof TV_DAYS;
   note: string;
 }
 
@@ -203,6 +206,10 @@ export const SCENARIOS: Record<string, Scenario> = {
   thanksgiving: { now: '2026-11-24T16:15', updatedMinAgo: 2, weather: 'cold', kitchen: ['butter', 'onions', 'bread', 'ice-cream'], note: 'Thanksgiving week' },
   stale: { now: '2026-11-12T15:40', updatedMinAgo: 195, offline: true, weather: 'mild', kitchen: ['milk'], note: 'Offline for over 3 hours' },
   offline: { now: '2026-11-12T15:40', updatedMinAgo: 25, offline: true, weather: 'mild', kitchen: ['milk', 'eggs'], note: 'Offline, 25 minutes old' },
+  'tv-thursday': { now: '2026-11-12T19:45', updatedMinAgo: 4, weather: 'evening', kitchen: ['milk', 'eggs'], tv: 'thursday', note: 'Thursday night: TNF on Prime, NBA on now' },
+  'tv-saturday': { now: '2026-11-14T12:40', updatedMinAgo: 3, weather: 'partly', kitchen: ['paper-towels', 'yogurt'], tv: 'saturday', note: 'Busy college football Saturday (capped at 8)' },
+  'tv-sunday': { now: '2026-11-15T15:40', updatedMinAgo: 6, weather: 'cloudy', kitchen: ['chips', 'bananas', 'eggs', 'milk'], tv: 'sunday', note: 'Steelers Sunday with the early games on' },
+  'tv-none': { now: '2026-11-10T18:30', updatedMinAgo: 2, weather: 'evening', kitchen: ['milk'], tv: 'quiet', note: 'Nothing on national TV: no card' },
 };
 
 export interface Fixture {
@@ -227,7 +234,7 @@ export function makeFixture(name: string): Fixture | null {
   const cals = s.sparse
     ? [{ ...dad, events: [] }, { ...family, events: [] }, holidays, steelers]
     : [dad, family, appointments, holidays, steelers];
-  const h = loadCode({ calendars: cals, weather: weatherFor(s.now.slice(0, 10), WEATHER[s.weather]) });
+  const h = loadCode({ calendars: cals, weather: weatherFor(s.now.slice(0, 10), WEATHER[s.weather]), fetch: espnFetch(s.tv ? TV_DAYS[s.tv] : {}) });
   h.fn('setup');
   const settings = h.ss.getSheetByName('Settings')!.rows;
   setSetting(settings, 'lat', 35.2);

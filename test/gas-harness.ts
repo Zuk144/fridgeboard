@@ -169,7 +169,10 @@ export interface Harness {
   setCalendars: (cals: FakeCalendarSpec[]) => void;
 }
 
-export function loadCode(opts: { calendars?: FakeCalendarSpec[]; weather?: unknown; geocode?: unknown } = {}): Harness {
+/** A fake HTTP answer for UrlFetchApp. Return undefined to fall through to the weather fakes. */
+export type FakeFetch = (url: string) => { code: number; text: string } | undefined;
+
+export function loadCode(opts: { calendars?: FakeCalendarSpec[]; weather?: unknown; geocode?: unknown; fetch?: FakeFetch } = {}): Harness {
   const ss = new FakeSpreadsheet();
   const props = new Map<string, string>();
   const cache = new Map<string, string>();
@@ -206,6 +209,9 @@ export function loadCode(opts: { calendars?: FakeCalendarSpec[]; weather?: unkno
     UrlFetchApp: {
       fetch: (url: string) => {
         fetched.push(url);
+        const custom = opts.fetch ? opts.fetch(url) : undefined;
+        if (custom) return { getResponseCode: () => custom.code, getContentText: () => custom.text };
+        if (url.includes('site.api.espn.com')) return { getResponseCode: () => 200, getContentText: () => '{"events":[]}' };
         const body = url.includes('geocoding') ? (opts.geocode ?? { results: [] }) : (opts.weather ?? {});
         return { getResponseCode: () => 200, getContentText: () => JSON.stringify(body) };
       },

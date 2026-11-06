@@ -61,8 +61,9 @@ that runs the kitchen list (§8). This replaced the first plan (secret iCal link
 
 ```
  Google Calendar ─┐
- Open-Meteo ──────┼──►  Apps Script web app, bound to the "Fridgeboard" Google Sheet
- Kitchen list ────┘      board  → calendar + weather + list summary (cached 2 min)
+ Open-Meteo ──────┤
+ ESPN scoreboard ─┼──►  Apps Script web app, bound to the "Fridgeboard" Google Sheet
+ Kitchen list ────┘      board  → calendar + weather + TV games + list summary (cached 2 min)
    (Sheet tabs)          state / need / undo / gotit → kitchen list
                                      ▲  HTTPS, every call needs the long key
                                      │
@@ -114,7 +115,8 @@ code change and no redeploy:
 - **Settings tab:** `weatherPlace` (town or ZIP; `setup()` looks up `lat`/`lon`), `timezone`,
   `daysAhead`, `jacketBelowF`, `rainGearAbovePct`, `hideObservances`, `awayLabel`,
   `travelKeywords`, `hideKeywords`, `nightStartHour`, `nightEndHour`, `tomorrowPeekHour`,
-  `staleAfterMinutes`.
+  `staleAfterMinutes`, `tvLeagues` (default `nfl, nba, cfb`; `none` hides the TV card),
+  `tvNetworks` (blank = the built-in national network list, §6).
 - **Script Properties:** `FB_KEY`, the long random access key (`showKey()`, `rotateKey()`).
 
 **GitHub Secrets** hold only what the fridge needs to find the script:
@@ -198,6 +200,35 @@ Reference data at time of writing (for fixtures, not hardcoding): Steelers @ Ben
   - Morning call: "Jacket weather" / "Rain gear" / "T-shirt day", from simple config thresholds.
   - Sunrise and sunset times in small text.
   - On an old board, hours that have already gone by are dropped from the strip.
+- **On TV tonight** (added Nov 6, 2026): the NFL, NBA and college football games on TV today, so
+  the family knows what's on. One line per game: matchup · local start time · network name
+  ("Bears @ Packers · 8:15 · Prime Video"), never channel numbers.
+  - **Source:** ESPN's free, unofficial scoreboard JSON (`site.api.espn.com/apis/site/v2/sports/
+    {football/nfl, basketball/nba, football/college-football}/scoreboard?dates=YYYYMMDD`, college
+    with `&groups=80&limit=300`), fetched by the script for the local date (no key), cached 20
+    minutes like the weather. Networks come from `broadcasts[].names` and
+    `geoBroadcasts[].media.shortName` (radio skipped), with spellings unified ("NFL Net" → "NFL
+    Network"; ESPN+ stays streaming, not ESPN).
+  - **Which games:** NFL and NBA on a national network: ABC, CBS, NBC, FOX, ESPN, ESPN2, TNT,
+    TBS, truTV, NFL Network, NBA TV, Prime Video, Peacock, Netflix, FS1 (`FB.tvNetworks` in
+    Code.gs; the Sheet's `tvNetworks` row replaces it). College: either team in the AP Top 25 on a
+    TV network (the list above plus ESPNU, SEC Network, BTN, ACC Network, CBS Sports Network, FS2,
+    The CW), or any game on ABC, CBS, NBC or FOX. Finished games drop; games in progress stay,
+    marked "on now" in red pen. Sorted by start time, capped at 8 (`more` counts the rest).
+  - **Your teams:** games of a team whose Sports calendar is ticked (the Steelers at minimum) wear
+    the team colors, like the game-day pills, and are never cut by the cap. Matching uses the
+    calendar's name ("Pittsburgh Steelers") and, for NFL/NBA calendars, its label.
+  - **Failures:** a failed or changed ESPN reply becomes `tv.error` (`espn_http_500`,
+    `espn_bad_json`, `espn_shape`, `espn_unreachable`) without touching the rest of the board; the
+    card then says "The game listings didn't come through." If only one league fails, the others
+    still show (`tv.failed`) and the failed one is retried on the next board.
+  - **On the board:** a band under This Week, "On TV tonight" (or "On TV today" when something
+    starts before 5 pm) with a little TV doodle, games in two columns in start order. It takes its
+    room from Today but never shrinks Today below 460 units and shows at most three rows (six
+    games); what doesn't fit becomes "+N more on TV" (your teams' games kept first). The weather
+    strip gives up 38 units while it shows. On the fridge's 1229 viewport a Steelers Sunday (game
+    tape on) gets one row; 1280 gets three. Hidden when nothing is on. An old board drops games
+    that must be over (4 h after kickoff for football, 3 h for the NBA).
 - **Clock:** ticks client-side. The countdown and "past event" fading update every minute without refetching.
 
 ## 7. Fridge behavior
@@ -267,12 +298,14 @@ Every panel is a **module** (`src/modules/`): an `id`, the config switches it `n
 | `gameday` | the game-day tape (games still show as rows and pills) |
 | `weather` | the header's weather and the 12-hour strip |
 | `kitchen` | the "We're out" notepad |
+| `tv` | the "On TV tonight" band (§6) |
 
 | Module | Source | Needs writes? | Phase |
 |---|---|---|---|
 | Calendar | Google Calendar via the script | No | v1 |
 | Weather | Open-Meteo | No | v1 |
 | Steelers game day | sports calendar | No | v1 (part of calendar) |
+| On TV tonight | ESPN scoreboard via the script (§6) | No | v1.1 (Nov 2026) |
 | Countdowns (birthdays, holidays, trips) | calendars + config list | No | v1.1 |
 | Trash/recycling night | config rule (e.g., "Tuesday night") | No | v1.1 |
 | Packages arriving today | Gmail delivery emails, via a scheduled Claude task | No | v3 |
@@ -296,7 +329,7 @@ v3 modules get their data from a separate job (for example a scheduled Claude ta
 ## 11. Tech stack
 
 - **Front end:** Vite + TypeScript, **no framework**. One modern bundle built for Chrome 108 (the fridge), no legacy copy or polyfills: about 17 KB of gzipped JS and 5 KB of CSS. Plain CSS with variables, absolute boxes from the layout planner, inline SVG for icons and the weather chart, two self-hosted fonts.
-- **Google side:** Apps Script (V8) in `apps-script/Code.gs`: CalendarApp, UrlFetchApp (Open-Meteo), SpreadsheetApp, CacheService, LockService. Tested in Node by running the real file against fake Google services (`test/gas-harness.ts`).
+- **Google side:** Apps Script (V8) in `apps-script/Code.gs`: CalendarApp, UrlFetchApp (Open-Meteo, ESPN), SpreadsheetApp, CacheService, LockService. Tested in Node by running the real file against fake Google services (`test/gas-harness.ts`).
 - **Build:** Node 22. `scripts/encrypt-config.ts` and `scripts/decrypt-check.ts` use `shared/crypto.ts`, the same WebCrypto code the browser runs.
 - **Tests:** Vitest.
 - **Deploy:** `actions/upload-pages-artifact` + `actions/deploy-pages`, on push to main or by hand.
@@ -314,7 +347,7 @@ fridgeboard/
   src/                           # the dashboard
     main.ts  app.ts  shell.ts    #   boot + unlock, the board's timers and DOM, the scaled stage
     context.ts                   #   board + now → render context and module boxes (pure)
-    logic/                       #   pure rules: days, timeline, game, night/peek, away, holidays, freshness, layout
+    logic/                       #   pure rules: days, timeline, game, night/peek, away, holidays, freshness, layout, tv
     modules/                     #   one file per panel
     screens/                     #   night, day agenda and other overlays, unlock
     dev.ts                       #   ?fixture= and ?now= (dev server only)
@@ -322,6 +355,7 @@ fridgeboard/
   public/fonts/                  # Caveat + Patrick Hand (woff2, SIL OFL)
   test/                          # Vitest: script harness, crypto, dist guard, board logic and rendering
   test/fixtures/boards.ts        # fake boards made by the real Code.gs against fake calendars
+  test/fixtures/espn.ts          # fake ESPN scoreboards (NFL, NBA, college) for the TV card
   design/                        # the three looks; A is the one we build; screens/ has M2 screenshots
   config/dash-config.example.json
   DASHBOARD_FRAME.md  CLAUDE.md  IDEAS.md  PROGRESS.md

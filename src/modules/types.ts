@@ -12,7 +12,7 @@ import type { Freshness } from '../logic/freshness';
 export type ToggleId = ModuleSwitch;
 export type Toggles = Record<ToggleId, boolean>;
 
-export const DEFAULT_TOGGLES: Toggles = { calendar: true, week: true, gameday: true, weather: true, kitchen: true };
+export const DEFAULT_TOGGLES: Toggles = { calendar: true, week: true, gameday: true, weather: true, kitchen: true, tv: true };
 
 export interface BaseCtx {
   now: number;

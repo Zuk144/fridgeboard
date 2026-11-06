@@ -85,3 +85,8 @@ export function check(size: number): string {
 export function mug(size: number): string {
   return `<svg class="doodle" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 26h30v18a10 10 0 0 1-10 10H24a10 10 0 0 1-10-10z"/><path d="M44 30h4a7 7 0 0 1 0 14h-5"/><path d="M24 8c-3 4 3 7 0 12M33 6c-3 4 3 7 0 12"/></svg>`;
 }
+
+/** A little hand-drawn TV with rabbit ears, for "On TV tonight". */
+export function tvSet(size: number): string {
+  return `<svg class="tv-icon" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 6l7 9 8-11"/><rect x="5" y="15" width="38" height="25" rx="5"/><path d="M11 20.5c5-1 13-1 19 0M14 44h20"/><circle cx="37" cy="23" r="1.4"/><circle cx="37" cy="30" r="1.4"/></svg>`;
+}

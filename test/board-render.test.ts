@@ -6,7 +6,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Board } from '../shared/payload';
 import { SCENARIOS, makeFixture } from './fixtures/boards';
 import { buildCtx, planBoard } from '../src/context';
-import { planLayout, stageFor, type Box, type SlotId } from '../src/logic/layout';
+import { planLayout, stageFor, TODAY_MIN, type Box, type SlotId } from '../src/logic/layout';
+import { tvFit, tvGamesNow, tvTitle } from '../src/logic/tv';
 import { DEFAULT_TOGGLES, type Toggles } from '../src/modules/types';
 import { togglesFrom } from '../src/config';
 import { checkBoard, ApiProblem } from '../src/api';
@@ -46,11 +47,11 @@ describe('stage', () => {
 });
 
 describe('layout', () => {
-  const all: SlotId[] = ['stale', 'header', 'game', 'away', 'today', 'nextup', 'week', 'weather', 'kitchen'];
+  const all: SlotId[] = ['stale', 'header', 'game', 'away', 'today', 'nextup', 'week', 'tv', 'weather', 'kitchen'];
 
   for (const stage of [FRIDGE, stageFor(720, 1280), stageFor(820, 1000)]) {
     it(`keeps every box on the page and apart (${stage.W}x${stage.H})`, () => {
-      const L = planLayout(stage, new Set(all));
+      const L = planLayout(stage, new Set(all), { tvRows: 4 });
       const boxes = Object.entries(L) as [SlotId, Box][];
       for (const [, b] of boxes) {
         expect(b.x).toBeGreaterThanOrEqual(0);
@@ -177,6 +178,95 @@ describe('every fixture renders', () => {
     expect(cal.ids).toEqual(['header', 'weather', 'kitchen']);
   });
 
+});
+
+describe('On TV tonight', () => {
+  it('lists games under This Week, in two columns, matchup · time · network', () => {
+    const r = render('tv-thursday');
+    expect(r.ids).toContain('tv');
+    const tv = r.plan.parts.find((p) => p.id === 'tv')!;
+    expect(tv.box.y).toBe(r.plan.layout.week!.y + r.plan.layout.week!.h);
+    expect(tv.box.y + tv.box.h).toBe(r.plan.layout.weather!.y);
+    expect(tv.html).toContain('On TV tonight');
+    expect(tv.html).toContain('Bears @ Packers');
+    expect(tv.html).toContain('8:15');
+    expect(tv.html).toContain('Prime Video');
+    expect(tv.html).toMatch(/Celtics @ 76ers<\/span><span class="tv-dot">·<\/span><span class="tv-live hand">on now/);
+  });
+
+  it('hides the card when nothing is on, when switched off, and for an older script', () => {
+    expect(render('tv-none').ids).not.toContain('tv');
+    expect(render('weekday').ids).not.toContain('tv');
+    expect(render('tv-saturday', { toggles: togglesFrom({ modules: { tv: false } }) }).ids).not.toContain('tv');
+    const f = makeFixture('tv-thursday')!;
+    const old: Board = JSON.parse(JSON.stringify(f.board));
+    delete old.tv;
+    const ctx = buildCtx(old, f.now, { stage: FRIDGE, toggles: DEFAULT_TOGGLES, offline: false, problem: '' });
+    expect(planBoard(old, f.now, ctx).parts.map((p) => p.id)).not.toContain('tv');
+  });
+
+  it('never squeezes Today below its minimum; it shows fewer games and "+N more"', () => {
+    for (const name of ['tv-thursday', 'tv-saturday', 'tv-sunday']) {
+      for (const stage of [FRIDGE, stageFor(720, 1280)]) {
+        const r = render(name, { stage });
+        expect(r.plan.layout.today!.h, `${name} ${stage.H}`).toBeGreaterThanOrEqual(TODAY_MIN);
+      }
+    }
+    const sat = render('tv-saturday');
+    expect(sat.plan.layout.tv!.h).toBeLessThanOrEqual(58 + 3 * 48 + 14);
+    expect(sat.html).toContain('+5 more on TV'); // 8 sent, 6 fit, plus 3 the script left out
+    // Game day at 1229: one row, and the Steelers game is one of the two.
+    const sun = render('tv-sunday');
+    const tv = sun.plan.parts.find((p) => p.id === 'tv')!.html;
+    expect(tv).toContain('Steelers @ Bengals');
+    expect(tv).toMatch(/tv-match tv-fav" style="background:#FFB612;color:#101820">Steelers @ Bengals/);
+    expect(tv).toContain('+8 more on TV');
+    expect(render('tv-sunday', { stage: stageFor(720, 1280) }).plan.layout.tv!.h).toBeGreaterThan(sun.plan.layout.tv!.h);
+  });
+
+  it('writes college ranks and shows the first network when two columns are tight', () => {
+    const tv = render('tv-saturday').plan.parts.find((p) => p.id === 'tv')!.html;
+    expect(tv).toContain('<span class="tv-rank">#9</span>Penn State @ <span class="tv-rank">#3</span>Michigan');
+    expect(tv).toMatch(/Michigan<\/span>.*3:30.*<span class="tv-net">ABC<\/span>/);
+    expect(tv).toContain('On TV today');
+  });
+
+  it('keeps an old board honest: drops games long over, marks started ones on now', () => {
+    const f = makeFixture('tv-thursday')!;
+    const later = f.now + 3 * 3600000; // 10:45 pm
+    const names = tvGamesNow(f.board, later, '2026-11-12').map((g) => g.away);
+    expect(names).toEqual(['Bears', 'Nuggets']); // the 7:30 NBA game is over
+    expect(tvGamesNow(f.board, f.now + 2 * 86400000, '2026-11-14')).toEqual([]);
+  });
+
+  it('fits the family\'s games first and keeps start order; titles tonight vs today', () => {
+    const g = (away: string, time: string, ampm: string, start: number, fav?: string) => ({ league: 'nfl', away, home: 'X', start, day: 'd', time, ampm, network: 'CBS', live: false, fav }) as never;
+    const games = [g('A', '1:00', 'pm', 1), g('B', '4:25', 'pm', 2), g('C', '8:20', 'pm', 3, 'steelers')];
+    expect(tvFit(games, 2)).toMatchObject({ shown: [games[0], games[2]], cut: 1 });
+    expect(tvTitle([games[2]])).toBe('On TV tonight');
+    expect(tvTitle(games)).toBe('On TV today');
+  });
+
+  it('says so when the listings did not come through', () => {
+    const f = makeFixture('tv-thursday')!;
+    const b: Board = JSON.parse(JSON.stringify(f.board));
+    b.tv = { error: 'espn_http_500', games: [], more: 0 };
+    const ctx = buildCtx(b, f.now, { stage: FRIDGE, toggles: DEFAULT_TOGGLES, offline: false, problem: '' });
+    const html = planBoard(b, f.now, ctx).parts.find((p) => p.id === 'tv')!.html;
+    expect(html).toContain("didn't come through");
+    expect(html).not.toContain('espn_http_500');
+  });
+
+  it('escapes team and network names', () => {
+    const f = makeFixture('tv-thursday')!;
+    const b: Board = JSON.parse(JSON.stringify(f.board));
+    b.tv!.games[0].away = '<img src=x>';
+    b.tv!.games[0].network = '<b>TNT</b>';
+    const ctx = buildCtx(b, f.now, { stage: FRIDGE, toggles: DEFAULT_TOGGLES, offline: false, problem: '' });
+    const html = planBoard(b, f.now, ctx).parts.find((p) => p.id === 'tv')!.html;
+    expect(html).not.toContain('<img');
+    expect(html).not.toContain('<b>TNT');
+  });
 });
 
 describe('safety', () => {

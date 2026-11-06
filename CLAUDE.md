@@ -16,7 +16,7 @@ For build work, use the `dash-dev` agent (`.claude/agents/dash-dev.md`). It has 
 
 ## Commands (fill in as they exist)
 
-- `npm run dev` — local dashboard. Dev only: `?fixture=<name>` shows a fake board without unlocking (names in `test/fixtures/boards.ts`), `?now=2026-11-15T19:30` sets the clock, `?offline=1`, `?off=weather,kitchen`, `?open=agenda:2026-11-16|kitchen|settings`
+- `npm run dev` — local dashboard. Dev only: `?fixture=<name>` shows a fake board without unlocking (names in `test/fixtures/boards.ts`), `?now=2026-11-15T19:30` sets the clock, `?offline=1`, `?off=weather,kitchen,tv`, `?open=agenda:2026-11-16|kitchen|settings`
 - `npm run build` — production build to `dist/` (the probe is copied from `public/probe/`)
 - `npm run encrypt-config` — `DASH_CONFIG` + `DASH_PASSPHRASE` (env or `.env.local`) → `dist/config.enc.json`
 - `npm run decrypt-check [-- <url>]` — round-trips the built or deployed config

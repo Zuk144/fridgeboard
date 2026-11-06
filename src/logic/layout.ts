@@ -47,12 +47,30 @@ export function stageFor(vw: number, vh: number): Stage {
   return { W, H, scale, offX, offY };
 }
 
-export type SlotId = 'stale' | 'header' | 'game' | 'away' | 'today' | 'nextup' | 'week' | 'weather' | 'kitchen';
+export type SlotId = 'stale' | 'header' | 'game' | 'away' | 'today' | 'nextup' | 'week' | 'tv' | 'weather' | 'kitchen';
 
 export type Layout = Partial<Record<SlotId, Box>>;
 
+/** "On TV tonight" band: a hand-lettered heading, then games in two columns. */
+export const TV_HEAD = 58;
+export const TV_ROW = 48;
+const TV_PAD = 14;
+/** Today never shrinks below this to make room for the TV band; the band shows fewer rows instead. */
+export const TODAY_MIN = 460;
+/** With the calendar on, the band shows at most this many rows (six games) and "+N more". */
+const TV_MAX_ROWS = 3;
+
+export function tvBandHeight(rows: number): number {
+  return TV_HEAD + rows * TV_ROW + TV_PAD;
+}
+
+export interface LayoutOptions {
+  /** Rows of games the TV band would like (two games per row). */
+  tvRows?: number;
+}
+
 /** Boxes for the active slots. `active` holds every slot that has something to show. */
-export function planLayout(stage: Pick<Stage, 'W' | 'H'>, on: Set<SlotId>): Layout {
+export function planLayout(stage: Pick<Stage, 'W' | 'H'>, on: Set<SlotId>, opts: LayoutOptions = {}): Layout {
   const { W, H } = stage;
   const L: Layout = {};
   let y = 40;
@@ -71,11 +89,19 @@ export function planLayout(stage: Pick<Stage, 'W' | 'H'>, on: Set<SlotId>): Layo
     L.away = { x: 0, y, w: W, h: 82 };
     y += 82;
   }
-  const bottomH = 300;
   const hasW = on.has('weather');
   const hasK = on.has('kitchen');
+  const tvWant = on.has('tv') ? Math.max(0, opts.tvRows || 0) : 0;
+  // The weather strip gives up a little height when the TV band is there (its chart has slack).
+  const bottomH = tvWant && calendar ? 262 : 300;
   if (!calendar) {
-    // No calendar: the weather takes the middle of the page, the list sits beside it.
+    // No calendar: the TV band sits under the header, the weather takes the middle of the page,
+    // the list sits beside it.
+    if (tvWant) {
+      const h = tvBandHeight(tvWant);
+      L.tv = { x: 0, y, w: W, h };
+      y += h;
+    }
     if (hasW) L.weather = { x: 0, y, w: hasK ? 700 : W, h: H - y - 20 };
     if (hasK) L.kitchen = { x: hasW ? 700 : W - 380, y: y + 10, w: 380, h: 290 };
     return L;
@@ -86,9 +112,19 @@ export function planLayout(stage: Pick<Stage, 'W' | 'H'>, on: Set<SlotId>): Layo
     if (hasW) L.weather = { x: 0, y: bottomY, w: hasK ? 700 : W, h: bottomH - 10 };
     if (hasK) L.kitchen = { x: hasW ? 700 : W - 380, y: bottomY, w: 380, h: bottomH - 10 };
   }
+  const weekH = on.has('week') ? 420 : 0;
+  // The TV band goes under This Week and takes its room from Today, down to TODAY_MIN.
+  if (tvWant) {
+    const room = bottomY - weekH - y - TODAY_MIN;
+    const rows = Math.min(tvWant, TV_MAX_ROWS, Math.floor((room - TV_HEAD - TV_PAD) / TV_ROW));
+    if (rows >= 1) {
+      const h = tvBandHeight(rows);
+      bottomY -= h;
+      L.tv = { x: 0, y: bottomY, w: W, h };
+    }
+  }
   let weekTop = bottomY;
-  if (on.has('week')) {
-    const weekH = 420;
+  if (weekH) {
     weekTop = bottomY - weekH;
     L.week = { x: 0, y: weekTop, w: W, h: weekH };
   }

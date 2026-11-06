@@ -1,6 +1,6 @@
 # FRIDGEBOARD progress
 
-Updated Nov 5, 2026 (M2 built). A fresh session should read this file first, then `DASHBOARD_FRAME.md` and `CLAUDE.md`.
+Updated Nov 6, 2026 (M2 built; "On TV tonight" card added). A fresh session should read this file first, then `DASHBOARD_FRAME.md` and `CLAUDE.md`.
 
 ## Where things live right now
 
@@ -81,8 +81,26 @@ Updated Nov 5, 2026 (M2 built). A fresh session should read this file first, the
     fridge loads about 17 KB gzipped JS + 5 KB CSS.
   - Dev only: `?fixture=<name>` (fake boards made by the real Code.gs in the harness,
     `test/fixtures/boards.ts`), `?now=`, `?offline=1`, `?off=`, `?open=`. Not in the build.
-- Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` (92 tests after the Nov 6 trim; was 93: script
-  harness, crypto, dist guard, 26 board-logic tests, 33 render/layout tests over every fixture).
+- **On TV tonight (Nov 6)** — frame §6 and §9:
+  - Script: `board.tv` from ESPN's free scoreboard JSON (NFL, NBA, college football) for the
+    local date, cached 20 min. NFL/NBA on a national network (`FB.tvNetworks`, overridable by the
+    `tvNetworks` Settings row); college if a Top 25 team is on TV or the game is on
+    ABC/CBS/NBC/FOX. Finished games dropped, live ones kept, sorted, capped at 8. Games of ticked
+    Sports calendars carry `fav` (team colors, never capped away). ESPN trouble → `tv.error`,
+    the board is untouched. New Settings rows `tvLeagues` (`nfl, nba, cfb`; `none` hides it) and
+    `tvNetworks` (blank = default list).
+  - Board: a band under This Week, two columns, "Bears @ Packers · 8:15 · Prime Video", red-pen
+    "on now", Steelers in black and gold. Hidden when nothing is on. Module switch `tv`
+    (`DASH_CONFIG.modules`, dev `?off=tv`). Today keeps at least 460 units; extra games become
+    "+N more on TV".
+  - Built from ESPN's documented shape only (this sandbox can't reach site.api.espn.com). Fake
+    scoreboards in `test/fixtures/espn.ts`; dev fixtures `tv-thursday`, `tv-saturday`,
+    `tv-sunday`, `tv-none`. Screens: `design/screens/tv-thursday.jpg`, `tv-saturday.jpg`.
+  - `script-check` now prints "N games on TV" (or "tv error …", or "tv not in board (old
+    script)" until the new Code.gs is pasted). A TV error never fails the check.
+- Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` (119 tests: script
+  harness incl. 14 TV tests, crypto, dist guard, 26 board-logic tests, 41 render/layout tests over
+  every fixture, script-check summary).
 - Screenshots of every state at 720 x 1229 and 720 x 1280 (DPR 1.5) were looked at
   and fixed; four are committed in `design/screens/`. A headless run of the built site checked the
   real flow: not set up, unlock, wrong passphrase, stored key on reload, offline, stale, bad key,
@@ -108,6 +126,29 @@ Every deploy now encrypts the config, checks it opens (`decrypt-check`), and cal
 (DASH_PASSPHRASE had to be lengthened to 8+ characters first.)
 
 ## Waiting on Zuk
+
+### Update the Google script for "On TV tonight" (5 minutes)
+
+The fridge page already has the TV card; it stays hidden until the script sends games.
+
+1. Open the **Fridgeboard** Google Sheet.
+2. Menu **Extensions → Apps Script**.
+3. In another tab open https://raw.githubusercontent.com/Zuk144/fridgeboard/main/apps-script/Code.gs,
+   select all, copy.
+4. Back in the editor, select everything in `Code.gs`, delete it, paste.
+5. Tap the **save** icon.
+6. Function dropdown → **setup** → **Run**. It adds two Settings rows, `tvLeagues` and
+   `tvNetworks`, and leaves everything else alone. No new permission prompt is expected (the
+   script can already reach the web for the weather); if Google asks, allow it the same way as
+   before.
+7. **Deploy → Manage deployments → pencil icon → Version: New version → Deploy.** The URL stays
+   the same.
+8. Tell Claude "script updated". The next deploy's `script-check` line should read
+   "N games on TV" instead of "tv not in board (old script)".
+
+Tuning from the phone (Settings tab): `tvLeagues` = `nfl, nba` drops college; `none` hides the
+card. `tvNetworks` = a comma list (e.g. `CBS, FOX, NBC, ESPN, Prime Video`) replaces the national
+network list for NFL/NBA.
 
 ### Look at M2 on the fridge
 
@@ -207,6 +248,14 @@ Then tell Claude "secrets are in". Never paste the URL, key, or passphrase into 
   its button.
 - "Got it" rows tidy themselves out of the Needed tab after 24 hours (the Log keeps history).
 - Encrypted config is `config.enc.json`, not `data.enc.json`: it holds only the script URL and key.
+- TV card (Nov 6): sits under This Week; at most 3 rows (6 games) on the board, Today keeps 460+
+  units, and the weather strip is 38 units shorter while it shows. A Steelers Sunday at 1229 gets
+  one row (two games, the Steelers always one of them) plus "+N more on TV".
+- TV card: title says "tonight" when everything listed starts at 5 pm or later, else "today".
+- TV card: two-column lines show only the first network of a simulcast ("ABC", not
+  "ABC / ESPN2"); a single game shows both. "BTN" is used for the Big Ten Network (its own brand).
+- TV card: a game past kickoff counts as "on now" even if ESPN still says scheduled; an old
+  board drops games 4 h (football) or 3 h (NBA) after kickoff.
 
 ## Real-calendar notes (checked Nov 5 via the Calendar connector; nothing copied into the repo)
 

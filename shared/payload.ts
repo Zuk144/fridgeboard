@@ -75,6 +75,40 @@ export interface Weather {
   call?: { kind: 'jacket' | 'rain' | 'jacket-rain' | 'tshirt'; text: string };
 }
 
+export type TvLeague = 'nfl' | 'nba' | 'cfb';
+
+/** One game on national TV today, from ESPN's scoreboard via the script. */
+export interface TvGame {
+  league: TvLeague;
+  /** Short team names: "Bears", "Ohio State". */
+  away: string;
+  home: string;
+  /** AP Top 25 rank, college only; left out when unranked. */
+  awayRank?: number;
+  homeRank?: number;
+  /** Epoch ms. */
+  start: number;
+  day: DayKey;
+  /** Local start like "8:15", plus "am"/"pm". */
+  time: string;
+  ampm: string;
+  /** Network names, at most two: "Prime Video", "ESPN / ABC". Never channel numbers. */
+  network: string;
+  /** In progress when the script looked (or past its start time). */
+  live: boolean;
+  /** Key of a ticked sports calendar whose team plays (highlighted in its colors). */
+  fav?: string;
+}
+
+/** "On TV tonight". Sorted by start time, capped at 8; `more` counts games left out. */
+export interface TvListing {
+  error?: string;
+  games: TvGame[];
+  more: number;
+  /** Leagues whose scoreboard failed while others worked. */
+  failed?: TvLeague[];
+}
+
 export interface KitchenSummary {
   count: number;
   /** Newest first, at most six. */
@@ -102,6 +136,8 @@ export interface Board {
   events: BoardEvent[];
   away: AwayRange[];
   weather: Weather;
+  /** Missing from scripts older than the TV card (Nov 2026); the card then stays hidden. */
+  tv?: TvListing;
   kitchen: KitchenSummary;
   display: DisplaySettings;
   errors: { cal: string; error: string }[];
@@ -140,7 +176,7 @@ export interface ApiError {
 }
 
 /** Module switches in DASH_CONFIG (frame §9). Anything left out stays on. */
-export const MODULE_SWITCHES = ['calendar', 'week', 'gameday', 'weather', 'kitchen'] as const;
+export const MODULE_SWITCHES = ['calendar', 'week', 'gameday', 'weather', 'kitchen', 'tv'] as const;
 export type ModuleSwitch = (typeof MODULE_SWITCHES)[number];
 
 /** What the fridge needs to reach the Google side. Ships only inside the encrypted config. */

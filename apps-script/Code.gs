@@ -5,6 +5,8 @@
  *   - reads your Google Calendars live (Google expands repeating events, moved and cancelled
  *     instances, and time zones for us),
  *   - fetches the weather from Open-Meteo (no API key),
+ *   - lists tonight's NFL, NBA and college football games on TV from ESPN's public scoreboard
+ *     (no key),
  *   - runs the "We're out" kitchen list stored in this Sheet.
  *
  * Nothing personal lives in this file. The access key sits in Script Properties, and your
@@ -30,7 +32,35 @@ var FB = {
   weatherCacheSeconds: 1200,
   keepGotItHours: 24,
   tripJoinHours: 18,
-  maxNameLength: 60
+  maxNameLength: 60,
+  // "On TV tonight": NFL and NBA games show when one of these networks carries them. The Sheet's
+  // tvNetworks row replaces this list when it's filled in.
+  tvNetworks: ['ABC', 'CBS', 'NBC', 'FOX', 'ESPN', 'ESPN2', 'TNT', 'TBS', 'truTV', 'NFL Network', 'NBA TV',
+    'Prime Video', 'Peacock', 'Netflix', 'FS1'],
+  // College football shows a game on one of these even when neither team is ranked.
+  tvBigNetworks: ['ABC', 'CBS', 'NBC', 'FOX'],
+  // A ranked college game also counts as on TV on these.
+  tvCollegeNetworks: ['ESPNU', 'SEC Network', 'BTN', 'ACC Network', 'CBS Sports Network', 'FS2', 'The CW'],
+  tvMax: 8,
+  tvCacheSeconds: 1200
+};
+
+// ESPN's free scoreboard JSON (unofficial, no key). The fridge never calls it; this script does.
+var TV_LEAGUES = {
+  nfl: { path: 'football/nfl', extra: '' },
+  nba: { path: 'basketball/nba', extra: '' },
+  cfb: { path: 'football/college-football', extra: '&groups=80&limit=300' }
+};
+
+// How ESPN (and people typing in the Sheet) spell the networks, squashed to letters and digits.
+var TV_ALIASES = {
+  nflnet: 'NFL Network', nflnetwork: 'NFL Network', nfln: 'NFL Network',
+  prime: 'Prime Video', primevideo: 'Prime Video', amazon: 'Prime Video', amazonprime: 'Prime Video', amazonprimevideo: 'Prime Video',
+  nbatv: 'NBA TV', trutv: 'truTV', fox: 'FOX', foxsports1: 'FS1', fs1: 'FS1', fs2: 'FS2',
+  secn: 'SEC Network', secnetwork: 'SEC Network', btn: 'BTN', bigtennetwork: 'BTN',
+  accn: 'ACC Network', accnetwork: 'ACC Network', cbssn: 'CBS Sports Network', cbssportsnetwork: 'CBS Sports Network',
+  cw: 'The CW', thecw: 'The CW', cwnetwork: 'The CW', espnu: 'ESPNU', espn2: 'ESPN2', espn: 'ESPN',
+  abc: 'ABC', cbs: 'CBS', nbc: 'NBC', tnt: 'TNT', tbs: 'TBS', peacock: 'Peacock', netflix: 'Netflix'
 };
 
 var TAB = { settings: 'Settings', calendars: 'Calendars', items: 'Items', needed: 'Needed', log: 'Log' };
@@ -50,7 +80,9 @@ var SETTINGS_DEFAULTS = [
   ['nightStartHour', 22, 'Night mode starts at this hour (0-23): dim clock and tomorrow\'s first event.'],
   ['nightEndHour', 6, 'Night mode ends at this hour.'],
   ['tomorrowPeekHour', 18, 'After this hour, Tomorrow gets more room than Today.'],
-  ['staleAfterMinutes', 120, 'Show an amber "old data" banner after this long without fresh data.']
+  ['staleAfterMinutes', 120, 'Show an amber "old data" banner after this long without fresh data.'],
+  ['tvLeagues', 'nfl, nba, cfb', 'On TV tonight: which leagues to list (nfl, nba, cfb). Type none to hide the card.'],
+  ['tvNetworks', '', 'Optional: the NFL/NBA networks to list, comma separated. Blank = ' + FB.tvNetworks.join(', ') + '.']
 ];
 
 var CAL_HEADERS = ['On', 'Label', 'Kind', 'Show', 'Color', 'Calendar name', 'Calendar ID'];
@@ -167,6 +199,7 @@ function buildBoard_(now) {
     events: cal.events,
     away: cal.away,
     weather: getWeather_(s, now, tz),
+    tv: safeTv_(s, now, tz, rows),
     display: {
       nightStartHour: hour_(s.nightStartHour, 22),
       nightEndHour: hour_(s.nightEndHour, 6),
@@ -405,6 +438,229 @@ function ensureLatLon_(s) {
   setSetting_('lat', loc.lat);
   setSetting_('lon', loc.lon);
   return loc;
+}
+
+/* =========================================================================================
+ * On TV tonight (ESPN's public scoreboard, no key)
+ * ======================================================================================= */
+
+/** The TV list never breaks the board: anything unexpected becomes tv.error. */
+function safeTv_(s, now, tz, rows) {
+  try {
+    return getTv_(s, now, tz, rows);
+  } catch (err) {
+    return { error: 'tv_failed', games: [], more: 0 };
+  }
+}
+
+function getTv_(s, now, tz, rows) {
+  var leagues = tvLeagues_(s.tvLeagues);
+  if (!leagues.length) return { games: [], more: 0 };
+  var day = fmt_(new Date(now), tz, 'yyyy-MM-dd');
+  var cache = CacheService.getScriptCache();
+  var key = 'fb_tv_' + day + '_' + leagues.join('');
+  var raw = null;
+  var hit = cache.get(key);
+  if (hit) raw = JSON.parse(hit);
+  if (!raw) {
+    raw = { games: [], failed: [], error: '' };
+    leagues.forEach(function (lg) {
+      var r = fetchLeague_(lg, day.replace(/-/g, ''));
+      if (r.error) {
+        raw.failed.push(lg);
+        raw.error = raw.error || r.error;
+      } else {
+        raw.games = raw.games.concat(r.games);
+      }
+    });
+    // Only a complete answer is cached, so a league that failed is tried again on the next board.
+    if (!raw.failed.length) {
+      try { cache.put(key, JSON.stringify(raw), FB.tvCacheSeconds); } catch (err) { /* fine */ }
+    }
+  }
+  if (raw.failed.length === leagues.length) return { error: raw.error, games: [], more: 0 };
+  var out = pickTv_(raw.games, s, now, day, tz, tvFavs_(rows));
+  if (raw.failed.length) out.failed = raw.failed;
+  return out;
+}
+
+function tvLeagues_(text) {
+  var out = [];
+  words_(text).forEach(function (w) {
+    var lg = w === 'ncaaf' || w === 'college football' || w === 'college' ? 'cfb' : w;
+    if (TV_LEAGUES[lg] && out.indexOf(lg) < 0) out.push(lg);
+  });
+  return out;
+}
+
+/** One league's scoreboard for a local date (YYYYMMDD). Never logs what ESPN sends. */
+function fetchLeague_(lg, ymd) {
+  var url = 'https://site.api.espn.com/apis/site/v2/sports/' + TV_LEAGUES[lg].path + '/scoreboard?dates=' + ymd + TV_LEAGUES[lg].extra;
+  var res;
+  try {
+    res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  } catch (err) {
+    return { error: 'espn_unreachable' };
+  }
+  if (res.getResponseCode() !== 200) return { error: 'espn_http_' + res.getResponseCode() };
+  var api;
+  try {
+    api = JSON.parse(res.getContentText());
+  } catch (err) {
+    return { error: 'espn_bad_json' };
+  }
+  if (!api || !Array.isArray(api.events)) return { error: 'espn_shape' };
+  var games = [];
+  api.events.forEach(function (ev) {
+    var g = null;
+    try { g = shapeGame_(ev, lg); } catch (err) { g = null; }
+    if (g) games.push(g);
+  });
+  // Games listed but none readable: ESPN changed its JSON.
+  if (api.events.length && !games.length) return { error: 'espn_shape' };
+  return { games: games };
+}
+
+function shapeGame_(ev, lg) {
+  var comp = ev && ev.competitions && ev.competitions[0];
+  if (!comp || !Array.isArray(comp.competitors)) return null;
+  var start = Date.parse(ev.date || comp.date);
+  if (!isFinite(start)) return null;
+  var home = null;
+  var away = null;
+  comp.competitors.forEach(function (c) {
+    if (c && c.homeAway === 'home') home = c;
+    else if (c && c.homeAway === 'away') away = c;
+  });
+  if (!home || !away || !home.team || !away.team) return null;
+  var st = (ev.status && ev.status.type) || (comp.status && comp.status.type) || {};
+  return {
+    league: lg,
+    start: start,
+    state: String(st.state || 'pre'),
+    away: teamName_(away.team),
+    home: teamName_(home.team),
+    awayFull: String(away.team.displayName || ''),
+    homeFull: String(home.team.displayName || ''),
+    awayRank: rank_(away),
+    homeRank: rank_(home),
+    nets: networksOf_(comp)
+  };
+}
+
+function teamName_(t) {
+  return String(t.shortDisplayName || t.name || t.abbreviation || t.displayName || '?');
+}
+
+/** AP rank 1-25, or 0 (ESPN sends 99 or nothing for unranked). */
+function rank_(c) {
+  var r = Number(c.curatedRank && c.curatedRank.current);
+  return r >= 1 && r <= 25 ? r : 0;
+}
+
+/** Network names from broadcasts[].names and geoBroadcasts[].media.shortName, deduplicated. */
+function networksOf_(comp) {
+  var out = [];
+  var seen = {};
+  function add(name) {
+    var c = tvCanon_(name);
+    if (!c || seen[squash_(c)]) return;
+    seen[squash_(c)] = true;
+    out.push(c);
+  }
+  (comp.broadcasts || []).forEach(function (b) { (b && b.names || []).forEach(add); });
+  (comp.geoBroadcasts || []).forEach(function (g) {
+    if (!g || /radio/i.test(String(g.type && g.type.shortName || ''))) return;
+    add(g.media && g.media.shortName);
+  });
+  return out;
+}
+
+/** Letters and digits only, but "+" stays meaningful: ESPN+ is streaming, not ESPN. */
+function squash_(s) {
+  return String(s || '').toLowerCase().replace(/\+/g, 'plus').replace(/[^a-z0-9]/g, '');
+}
+
+/** "NFL Net" → "NFL Network", "fox" → "FOX"; names we don't know stay as written. */
+function tvCanon_(name) {
+  var s = String(name || '').trim();
+  if (!s) return '';
+  return TV_ALIASES[squash_(s)] || s;
+}
+
+/** Ticked sports calendars, for highlighting their teams' games. */
+function tvFavs_(rows) {
+  var favs = [];
+  (rows || []).forEach(function (r) {
+    if (!r.on || r.kind !== 'sports') return;
+    var id = String(r.id || '');
+    var league = /^nfl_/.test(id) ? 'nfl' : /^nba_/.test(id) ? 'nba' : /^(ncaaf|cfb)_/.test(id) ? 'cfb' : '';
+    favs.push({ key: r.key, name: String(r.name || '').toLowerCase().trim(), label: String(r.label || '').toLowerCase().trim(), league: league });
+  });
+  return favs;
+}
+
+function favOf_(g, favs) {
+  for (var i = 0; i < favs.length; i++) {
+    var f = favs[i];
+    if (f.league && f.league !== g.league) continue;
+    var teams = [[g.awayFull, g.away], [g.homeFull, g.home]];
+    for (var j = 0; j < teams.length; j++) {
+      var full = teams[j][0].toLowerCase();
+      var short = teams[j][1].toLowerCase();
+      if (f.name && full && (f.name === full || f.name.indexOf(full) >= 0 || (f.name.length >= 6 && full.indexOf(f.name) >= 0))) return f.key;
+      if (f.label && f.label === short) return f.key;
+    }
+  }
+  return '';
+}
+
+/**
+ * Filters, highlights and caps the list. NFL/NBA: a national network. College: a big broadcast
+ * network, or a ranked team on any TV network we know. Finished games drop; live ones stay.
+ */
+function pickTv_(games, s, now, day, tz, favs) {
+  var custom = words_(s.tvNetworks);
+  var national = (custom.length ? custom.map(tvCanon_) : FB.tvNetworks).map(squash_);
+  var big = FB.tvBigNetworks.map(squash_);
+  var college = national.concat(big, FB.tvCollegeNetworks.map(squash_));
+  var list = [];
+  games.forEach(function (g) {
+    if (g.state === 'post') return;
+    var live = g.state === 'in' || g.start <= now;
+    if (!live && fmt_(new Date(g.start), tz, 'yyyy-MM-dd') !== day) return;
+    var ok = g.league === 'cfb' ? college : national;
+    var nets = g.nets.filter(function (n) { return ok.indexOf(squash_(n)) >= 0; });
+    if (!nets.length) return;
+    if (g.league === 'cfb') {
+      var onBig = nets.some(function (n) { return big.indexOf(squash_(n)) >= 0; });
+      if (!onBig && !g.awayRank && !g.homeRank) return;
+    }
+    var item = {
+      league: g.league,
+      away: g.away,
+      home: g.home,
+      start: g.start,
+      day: fmt_(new Date(g.start), tz, 'yyyy-MM-dd'),
+      time: fmt_(new Date(g.start), tz, 'h:mm'),
+      ampm: fmt_(new Date(g.start), tz, 'a').toLowerCase(),
+      network: nets.slice(0, 2).join(' / '),
+      live: live
+    };
+    if (g.league === 'cfb') {
+      if (g.awayRank) item.awayRank = g.awayRank;
+      if (g.homeRank) item.homeRank = g.homeRank;
+    }
+    var fav = favOf_(g, favs);
+    if (fav) item.fav = fav;
+    list.push(item);
+  });
+  list.sort(function (a, b) { return a.start - b.start; });
+  // Cap the list, but never cut a game of a team the family follows.
+  var keep = list.filter(function (g) { return g.fav; }).slice(0, FB.tvMax);
+  list.forEach(function (g) { if (!g.fav && keep.length < FB.tvMax) keep.push(g); });
+  keep.sort(function (a, b) { return a.start - b.start; });
+  return { games: keep, more: list.length - keep.length };
 }
 
 /* =========================================================================================
@@ -729,6 +985,7 @@ function readCalendarRows_() {
       on: r[0] === true || String(r[0]).toUpperCase() === 'TRUE',
       key: key,
       label: String(r[1] || r[5]),
+      name: String(r[5] || ''),
       kind: kind,
       show: String(r[3]) === 'busy' ? 'busy' : 'full',
       color: /^#[0-9a-fA-F]{6}$/.test(String(r[4])) ? String(r[4]) : (FB.inks[kind] || FB.inks.other),

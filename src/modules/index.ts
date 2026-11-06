@@ -8,6 +8,7 @@ import { nextupModule } from './nextup';
 import { weekModule } from './week';
 import { weatherModule } from './weather';
 import { kitchenModule } from './kitchen';
+import { tvModule } from './tv';
 import { esc } from '../ui/html';
 
 /** Amber banner when the board is older than staleAfterMinutes. Never quietly shows old info. */
@@ -30,6 +31,7 @@ export const MODULES: DashModule[] = [
   awayModule,
   todayModule,
   weekModule,
+  tvModule,
   weatherModule,
   kitchenModule,
   nextupModule,

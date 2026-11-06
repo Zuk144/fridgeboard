@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { loadCode, at, type Harness, type FakeCalendarSpec } from './gas-harness';
-import type { Board, KitchenState } from '../shared/payload';
+import { loadCode, at, type Harness, type FakeCalendarSpec, type FakeFetch } from './gas-harness';
+import type { Board, KitchenState, TvGame } from '../shared/payload';
+import { TV_DAYS, T, espnFetch } from './fixtures/espn';
 
 const NY = 'America/New_York';
 const utcMidnight = (d: string) => new Date(`${d}T00:00:00Z`);
@@ -95,8 +96,8 @@ function calRow(h: Harness, name: string) {
   return h.ss.getSheetByName('Calendars')!.rows.find((r) => r[5] === name)!;
 }
 
-function setUp(): Harness {
-  const h = loadCode({ calendars: calendars(), weather: weather(), geocode: { results: [{ latitude: 40.1234567, longitude: -80.7654321 }] } });
+function setUp(fetch?: FakeFetch): Harness {
+  const h = loadCode({ calendars: calendars(), weather: weather(), geocode: { results: [{ latitude: 40.1234567, longitude: -80.7654321 }] }, fetch });
   // The real flow: run setup, type your town in Settings, run setup again.
   h.fn('setup');
   setSetting(h, 'weatherPlace', 'Springfield');
@@ -139,7 +140,7 @@ describe('setup()', () => {
     h.fn('setup');
     expect(h.ss.getSheetByName('Items')!.table()).toHaveLength(28);
     expect(h.ss.getSheetByName('Calendars')!.table()).toHaveLength(7);
-    expect(h.ss.getSheetByName('Settings')!.table()).toHaveLength(15);
+    expect(h.ss.getSheetByName('Settings')!.table()).toHaveLength(17);
     expect(h.props.get('FB_KEY')).toBe(key);
   });
 });
@@ -403,5 +404,198 @@ describe('kitchen list', () => {
     expect(out.content.startsWith('fbCb1({"ok":true')).toBe(true);
     const evil = h.fn('doGet', { parameter: { action: 'ping', k, callback: 'alert(1)//' } });
     expect(evil.content.startsWith('{')).toBe(true);
+  });
+});
+
+describe('board: on TV tonight', () => {
+  const espnUrls = (h: Harness) => h.fetched.filter((u) => u.includes('site.api.espn.com'));
+  const line = (g: TvGame) => `${g.awayRank ? `#${g.awayRank} ` : ''}${g.away} @ ${g.homeRank ? `#${g.homeRank} ` : ''}${g.home} · ${g.time} · ${g.network}${g.live ? ' · live' : ''}`;
+  const tvAt = (h: Harness, local: string) => (h.fn('buildBoard_', at(local).getTime()) as Board).tv!;
+
+  it('asks ESPN for the local date, with the FBS group for college', () => {
+    const h = setUp(espnFetch({}));
+    // 11:30 pm Saturday in New York is already Sunday in UTC.
+    tvAt(h, '2026-11-07T23:30');
+    const urls = espnUrls(h);
+    expect(urls).toHaveLength(3);
+    expect(urls.every((u) => u.includes('dates=20261107'))).toBe(true);
+    expect(urls.find((u) => u.includes('/football/nfl/'))).toBeTruthy();
+    expect(urls.find((u) => u.includes('/basketball/nba/'))).toBeTruthy();
+    expect(urls.find((u) => u.includes('/college-football/'))).toContain('&groups=80&limit=300');
+  });
+
+  it('lists NFL and NBA games on national networks only, with network names', () => {
+    const h = setUp(espnFetch(TV_DAYS.thursday));
+    const tv = tvAt(h, '2026-11-12T19:45');
+    expect(tv.error).toBeUndefined();
+    // Local-only NBA games (regional sports networks) and the unranked ESPN college game are out.
+    expect(tv.games.map(line)).toEqual([
+      'Celtics @ 76ers · 7:30 · Prime Video · live',
+      'Bears @ Packers · 8:15 · Prime Video',
+      'Nuggets @ Lakers · 10:00 · Prime Video',
+    ]);
+    expect(tv.games.map((g) => g.league)).toEqual(['nba', 'nfl', 'nba']);
+    expect(tv.more).toBe(0);
+    // Never a channel number, a local station or a radio network.
+    expect(JSON.stringify(tv)).not.toMatch(/WLUK|Westwood|FDSN|KJZZ|Altitude/);
+  });
+
+  it('reads networks from geoBroadcasts too, and spells them the same way', () => {
+    const h = setUp(espnFetch({
+      nfl: [{ away: T.chiefs, home: T.broncos, at: '2026-11-12T20:15', nets: [], geo: [{ type: 'TV', market: 'National', name: 'NFL Net' }] }],
+      nba: [{ away: T.knicks, home: T.heat, at: '2026-11-12T19:30', nets: ['ESPN', 'espn'], geo: [{ type: 'Streaming', market: 'National', name: 'ESPN+' }] }],
+    }));
+    expect(tvAt(h, '2026-11-12T12:00').games.map(line)).toEqual(['Knicks @ Heat · 7:30 · ESPN', 'Chiefs @ Broncos · 8:15 · NFL Network']);
+  });
+
+  it('lets the Sheet replace the NFL/NBA network list', () => {
+    const h = setUp(espnFetch(TV_DAYS.thursday));
+    setSetting(h, 'tvNetworks', 'ESPN, nfl net, amazon prime');
+    expect(tvAt(h, '2026-11-12T19:45').games).toHaveLength(3);
+    setSetting(h, 'tvNetworks', 'ESPN, NBC');
+    h.cache.clear();
+    expect(tvAt(h, '2026-11-12T19:45').games).toEqual([]);
+  });
+
+  it('college: a Top 25 team on TV, or any game on ABC, CBS, NBC or FOX', () => {
+    const h = setUp(espnFetch({ cfb: TV_DAYS.saturday.cfb }));
+    const tv = tvAt(h, '2026-11-14T10:00');
+    const shown = tv.games.map((g) => `${g.away} @ ${g.home}`);
+    expect(shown).toContain('Ohio State @ Purdue'); // ranked, FOX
+    expect(shown).toContain('Northwestern @ Iowa'); // unranked, but ABC
+    expect(shown).toContain('Illinois @ Rutgers'); // ranked, BTN (Big Ten Network)
+    expect(shown).toContain('Texas A&M @ Missouri'); // ranked, SEC Network
+    expect(shown).not.toContain('Wake Forest @ Duke'); // unranked on ESPN
+    expect(shown).not.toContain('Kansas @ Baylor'); // unranked on FS1
+    expect(shown).not.toContain('Memphis @ UTSA'); // ranked, but only on ESPN+ (streaming)
+    const big = tv.games.find((g) => g.away === 'Penn State')!;
+    expect(line(big)).toBe('#9 Penn State @ #3 Michigan · 3:30 · ABC / ESPN2');
+    expect(tv.games.find((g) => g.away === 'Northwestern')).not.toHaveProperty('awayRank');
+  });
+
+  it('drops finished games and keeps live ones, marked live', () => {
+    const h = setUp(espnFetch({ nfl: TV_DAYS.sunday.nfl }));
+    const tv = tvAt(h, '2026-11-15T15:40');
+    const by = (away: string) => tv.games.find((g) => g.away === away);
+    expect(by('Bills')).toBeUndefined(); // final
+    expect(by('Lions')!.live).toBe(true);
+    expect(by('Chiefs')!.live).toBe(false);
+    // ESPN still says "pre" a minute after kickoff: past its start counts as on.
+    const late = setUp(espnFetch({ nfl: [{ away: T.bears, home: T.packers, at: '2026-11-12T20:15', nets: ['Prime Video'], state: 'pre' }] }));
+    expect(tvAt(late, '2026-11-12T20:17').games[0].live).toBe(true);
+  });
+
+  it('writes local times across both daylight-saving changes', () => {
+    // Sun Nov 1, 2026: clocks fall back at 2 am. Sun Mar 14, 2027: they spring forward.
+    const fall = setUp(espnFetch({ nfl: [
+      { away: T.bills, home: T.jets, at: '2026-11-01T09:30', nets: ['NFL Network'] },
+      { away: T.lions, home: T.vikings, at: '2026-11-01T13:00', nets: ['FOX'] },
+      { away: T.cowboys, home: T.niners, at: '2026-11-01T20:20', nets: ['NBC'] },
+    ] }));
+    const f = tvAt(fall, '2026-11-01T08:00');
+    expect(espnUrls(fall)[0]).toContain('dates=20261101');
+    expect(f.games.map((g) => `${g.time} ${g.ampm}`)).toEqual(['9:30 am', '1:00 pm', '8:20 pm']);
+    expect(f.games[1].start).toBe(Date.UTC(2026, 10, 1, 18, 0)); // EST, UTC-5
+    const spring = setUp(espnFetch({ nba: [
+      { away: T.celtics, home: T.knicks, at: '2027-03-14T13:00', nets: ['ABC'] },
+      { away: T.lakers, home: T.warriors, at: '2027-03-14T20:30', nets: ['NBC'] },
+    ] }));
+    const s = tvAt(spring, '2027-03-14T09:00');
+    expect(espnUrls(spring)[0]).toContain('dates=20270314');
+    expect(s.games.map((g) => `${g.time} ${g.ampm}`)).toEqual(['1:00 pm', '8:30 pm']);
+    expect(s.games[0].start).toBe(Date.UTC(2027, 2, 14, 17, 0)); // EDT, UTC-4
+    expect(s.games.every((g) => g.day === '2027-03-14')).toBe(true);
+  });
+
+  it('caps the list at 8 by start time and counts the rest', () => {
+    const h = setUp(espnFetch(TV_DAYS.saturday));
+    const tv = tvAt(h, '2026-11-14T12:40');
+    expect(tv.games).toHaveLength(8);
+    expect(tv.more).toBe(3);
+    const starts = tv.games.map((g) => g.start);
+    expect([...starts].sort((a, b) => a - b)).toEqual(starts);
+    expect(tv.games.map((g) => g.away)).not.toContain('Warriors'); // 8:30 pm, past the cap
+  });
+
+  it('highlights games of ticked sports calendars, and never caps them away', () => {
+    const h = setUp(espnFetch(TV_DAYS.sunday));
+    let tv = tvAt(h, '2026-11-15T15:40');
+    expect(tv.games).toHaveLength(8);
+    expect(tv.more).toBe(2);
+    const steelers = tv.games.find((g) => g.away === 'Steelers')!;
+    expect(steelers).toMatchObject({ fav: 'steelers', time: '8:20', network: 'NBC / Peacock' });
+    expect(tv.games.find((g) => g.away === 'Titans')).not.toHaveProperty('fav'); // calendar not ticked
+    expect(tv.games.filter((g) => g.fav)).toHaveLength(1);
+    // Tick the Titans: their game gets highlighted too.
+    calRow(h, 'Tennessee Titans')[0] = true;
+    h.cache.clear();
+    tv = tvAt(h, '2026-11-15T15:40');
+    expect(tv.games.find((g) => g.away === 'Titans')!.fav).toBe('titans');
+    // A college team that shares a nickname isn't mistaken for the pros.
+    expect(h.fn('favOf_', { league: 'cfb', away: 'Tennessee', home: 'Kentucky', awayFull: 'Tennessee Volunteers', homeFull: 'Kentucky Wildcats' }, h.fn('tvFavs_', h.fn('readCalendarRows_')))).toBe('');
+  });
+
+  it('caches the listing for 20 minutes, like the weather', () => {
+    const h = setUp(espnFetch(TV_DAYS.thursday));
+    tvAt(h, '2026-11-12T19:45');
+    expect(espnUrls(h)).toHaveLength(3);
+    tvAt(h, '2026-11-12T19:50');
+    expect(espnUrls(h)).toHaveLength(3);
+    expect([...h.cache.keys()]).toContain('fb_tv_2026-11-12_nflnbacfb');
+  });
+
+  it('follows tvLeagues, and "none" hides the card without calling ESPN', () => {
+    const h = setUp(espnFetch(TV_DAYS.thursday));
+    setSetting(h, 'tvLeagues', 'NBA');
+    const tv = tvAt(h, '2026-11-12T19:45');
+    expect(espnUrls(h)).toHaveLength(1);
+    expect(tv.games.every((g) => g.league === 'nba')).toBe(true);
+    setSetting(h, 'tvLeagues', 'none');
+    expect(tvAt(h, '2026-11-12T19:45')).toEqual({ games: [], more: 0 });
+    expect(espnUrls(h)).toHaveLength(1);
+  });
+
+  it('turns ESPN failures into tv.error without breaking the board', () => {
+    const cases: [Parameters<typeof espnFetch>[0], string][] = [
+      [{ nfl: { code: 500 }, nba: { code: 500 }, cfb: { code: 500 } }, 'espn_http_500'],
+      [{ nfl: { code: 200, text: '<html>oops' }, nba: { code: 200, text: 'nope' }, cfb: { code: 200, text: '' } }, 'espn_bad_json'],
+      [{ nfl: { code: 200, text: '{"sports":[]}' }, nba: { code: 200, text: '{"events":{}}' }, cfb: { code: 200, text: 'null' } }, 'espn_shape'],
+      // Events still listed, but the fields we read moved: also a shape change.
+      [{ nfl: { code: 200, text: '{"events":[{"id":"1","date":"2026-11-12T01:15Z","matchup":{}}]}' }, nba: { code: 404 }, cfb: { code: 404 } }, 'espn_shape'],
+    ];
+    for (const [day, error] of cases) {
+      const h = setUp(espnFetch(day));
+      const b = h.fn('buildBoard_', at('2026-11-12T19:45').getTime()) as Board;
+      expect(b.ok).toBe(true);
+      expect(b.events.length).toBeGreaterThan(0);
+      expect(b.tv).toEqual({ error, games: [], more: 0 });
+      expect([...h.cache.keys()].some((k) => k.startsWith('fb_tv'))).toBe(false); // errors aren't cached
+    }
+    const thrown = setUp((url) => {
+      if (url.includes('site.api.espn.com')) throw new Error('DNS error: site.api.espn.com');
+      return undefined;
+    });
+    expect(tvAt(thrown, '2026-11-12T19:45')).toEqual({ error: 'espn_unreachable', games: [], more: 0 });
+  });
+
+  it('keeps the leagues that worked when one fails, and tries the failed one again', () => {
+    const h = setUp(espnFetch({ ...TV_DAYS.thursday, nba: { code: 503 } }));
+    const tv = tvAt(h, '2026-11-12T19:45');
+    expect(tv.error).toBeUndefined();
+    expect(tv.failed).toEqual(['nba']);
+    expect(tv.games.map((g) => g.away)).toEqual(['Bears']);
+    tvAt(h, '2026-11-12T19:50');
+    expect(espnUrls(h)).toHaveLength(6);
+  });
+
+  it('setup adds the TV rows to an older Settings tab', () => {
+    const h = setUp();
+    const sh = h.ss.getSheetByName('Settings')!;
+    sh.rows = sh.rows.filter((r) => r[0] !== 'tvLeagues' && r[0] !== 'tvNetworks');
+    h.fn('setup');
+    const settings = Object.fromEntries(sh.rows.slice(1).map((r) => [r[0], r[1]]));
+    expect(settings.tvLeagues).toBe('nfl, nba, cfb');
+    expect(settings.tvNetworks).toBe('');
+    expect(settings.weatherPlace).toBe('Springfield');
   });
 });

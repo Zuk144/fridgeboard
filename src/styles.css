@@ -302,6 +302,26 @@ body {
 .day3 .wx-icon { vertical-align: middle; margin: -6px 4px 0 0; }
 .wx-pop { color: var(--rain); }
 
+/* ------------------------------------------------------------ On TV tonight */
+
+.tv-head { position: absolute; display: flex; align-items: flex-end; white-space: nowrap; }
+.tv-icon { stroke: var(--ink); vertical-align: -4px; margin-right: 12px; }
+.tv-more { margin-left: auto; font-size: 26px; line-height: 36px; }
+.tv-g {
+  position: absolute; display: flex; align-items: center; white-space: nowrap; overflow: hidden;
+  font-size: 28px; border-bottom: 2px solid var(--rule);
+}
+.tv-g.pencil { font-size: 28px; border-bottom: 0; }
+/* When a line is too long the network gives way first, then the matchup. */
+.tv-match { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tv-fav { border-radius: 6px; padding: 0 10px; margin-left: -10px; }
+.tv-rank { font-size: 21px; color: var(--pencil); margin-right: 4px; vertical-align: 2px; }
+.tv-fav .tv-rank { color: inherit; }
+.tv-dot { flex: none; color: var(--pencil); margin: 0 6px; }
+.tv-time { flex: none; }
+.tv-live { flex: none; color: var(--red); font-size: 33px; line-height: 30px; }
+.tv-net { flex: 0 40 auto; min-width: 60px; overflow: hidden; text-overflow: ellipsis; color: var(--pencil); font-size: 25px; }
+
 /* ------------------------------------------------------------ We're out notepad */
 
 .notepad {

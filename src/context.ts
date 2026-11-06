@@ -10,6 +10,7 @@ import { isNight, isPeek } from './logic/modes';
 import { freshness } from './logic/freshness';
 import { readableInk } from './logic/ink';
 import { planLayout, type Box, type Layout, type SlotId, type Stage } from './logic/layout';
+import { tvRowsWanted } from './logic/tv';
 
 export const PAPER = { day: '#F5EFE1', night: '#1B1E25' };
 
@@ -64,7 +65,7 @@ export function planBoard(b: Board, now: number, ctx: BaseCtx): { layout: Layout
     if (m.active && !m.active(b, now, ctx)) continue;
     active.add(m.id);
   }
-  const layout = planLayout(ctx.stage, active);
+  const layout = planLayout(ctx.stage, active, { tvRows: active.has('tv') ? tvRowsWanted(b, now, ctx.today) : 0 });
   const parts: Part[] = [];
   for (const m of MODULES) {
     const box = layout[m.id];
