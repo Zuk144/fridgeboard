@@ -408,7 +408,8 @@ describe('kitchen list', () => {
 });
 
 describe('board: on TV tonight', () => {
-  const espnUrls = (h: Harness) => h.fetched.filter((u) => u.includes('site.api.espn.com'));
+  // One request per league to the first ESPN host; the second host is only a fallback.
+  const espnUrls = (h: Harness) => h.fetched.filter((u) => u.startsWith('https://site.web.api.espn.com/'));
   const line = (g: TvGame) => `${g.awayRank ? `#${g.awayRank} ` : ''}${g.away} @ ${g.homeRank ? `#${g.homeRank} ` : ''}${g.home} · ${g.time} · ${g.network}${g.live ? ' · live' : ''}`;
   const tvAt = (h: Harness, local: string) => (h.fn('buildBoard_', at(local).getTime()) as Board).tv!;
 
@@ -572,10 +573,23 @@ describe('board: on TV tonight', () => {
       expect([...h.cache.keys()].some((k) => k.startsWith('fb_tv'))).toBe(false); // errors aren't cached
     }
     const thrown = setUp((url) => {
-      if (url.includes('site.api.espn.com')) throw new Error('DNS error: site.api.espn.com');
+      if (url.includes('api.espn.com')) throw new Error('DNS error: espn');
       return undefined;
     });
     expect(tvAt(thrown, '2026-11-12T19:45')).toEqual({ error: 'espn_unreachable', games: [], more: 0 });
+  });
+
+  it('falls back to the second ESPN host when the first refuses Google (403)', () => {
+    const real = espnFetch(TV_DAYS.thursday);
+    const h = setUp((url) => (url.startsWith('https://site.web.api.espn.com/') ? { code: 403, text: '' } : real(url)));
+    const tv = tvAt(h, '2026-11-12T19:45');
+    expect(tv.error).toBeUndefined();
+    expect(tv.games.map((g) => g.away)).toContain('Bears');
+    expect(h.fetched.some((u) => u.startsWith('https://site.api.espn.com/'))).toBe(true);
+    // When the first host answers, the second is never asked.
+    const ok = setUp(espnFetch(TV_DAYS.thursday));
+    tvAt(ok, '2026-11-12T19:45');
+    expect(ok.fetched.some((u) => u.startsWith('https://site.api.espn.com/'))).toBe(false);
   });
 
   it('keeps the leagues that worked when one fails, and tries the failed one again', () => {

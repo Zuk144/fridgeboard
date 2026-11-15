@@ -1,5 +1,5 @@
 /**
- * Fake ESPN scoreboard JSON, shaped like site.api.espn.com/apis/site/v2/sports/.../scoreboard
+ * Fake ESPN scoreboard JSON, shaped like site.web.api.espn.com/apis/site/v2/sports/.../scoreboard
  * (the sandbox can't reach ESPN, so this follows the documented shape, trimmed to the fields
  * that matter plus some of the noise around them). Matchups, ranks and networks are made up.
  */
@@ -137,7 +137,7 @@ export type EspnDay = Partial<Record<League, FakeGame[] | { code: number; text?:
 /** Routes the script's ESPN requests to fake scoreboards (or a fake failure). */
 export function espnFetch(day: EspnDay): FakeFetch {
   return (url) => {
-    if (!url.includes('site.api.espn.com')) return undefined;
+    if (!url.includes('api.espn.com')) return undefined;
     const league: League = url.includes('/basketball/nba/') ? 'nba' : url.includes('/college-football/') ? 'cfb' : 'nfl';
     const v = day[league];
     if (!v) return { code: 200, text: JSON.stringify(scoreboard(league, [])) };

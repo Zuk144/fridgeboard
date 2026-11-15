@@ -493,16 +493,28 @@ function tvLeagues_(text) {
   return out;
 }
 
+/**
+ * ESPN's scoreboard lives on two hosts with the same JSON. site.api.espn.com answers 403 to
+ * Google's servers (seen Nov 15, 2026); site.web.api.espn.com answers them. Try in order.
+ */
+var ESPN_HOSTS = ['https://site.web.api.espn.com', 'https://site.api.espn.com'];
+
 /** One league's scoreboard for a local date (YYYYMMDD). Never logs what ESPN sends. */
 function fetchLeague_(lg, ymd) {
-  var url = 'https://site.api.espn.com/apis/site/v2/sports/' + TV_LEAGUES[lg].path + '/scoreboard?dates=' + ymd + TV_LEAGUES[lg].extra;
-  var res;
-  try {
-    res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  } catch (err) {
-    return { error: 'espn_unreachable' };
+  var path = '/apis/site/v2/sports/' + TV_LEAGUES[lg].path + '/scoreboard?dates=' + ymd + TV_LEAGUES[lg].extra;
+  var res = null;
+  var error = 'espn_unreachable';
+  for (var i = 0; i < ESPN_HOSTS.length && !res; i++) {
+    var r;
+    try {
+      r = UrlFetchApp.fetch(ESPN_HOSTS[i] + path, { muteHttpExceptions: true });
+    } catch (err) {
+      continue;
+    }
+    if (r.getResponseCode() === 200) res = r;
+    else error = 'espn_http_' + r.getResponseCode();
   }
-  if (res.getResponseCode() !== 200) return { error: 'espn_http_' + res.getResponseCode() };
+  if (!res) return { error: error };
   var api;
   try {
     api = JSON.parse(res.getContentText());

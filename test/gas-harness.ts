@@ -211,7 +211,7 @@ export function loadCode(opts: { calendars?: FakeCalendarSpec[]; weather?: unkno
         fetched.push(url);
         const custom = opts.fetch ? opts.fetch(url) : undefined;
         if (custom) return { getResponseCode: () => custom.code, getContentText: () => custom.text };
-        if (url.includes('site.api.espn.com')) return { getResponseCode: () => 200, getContentText: () => '{"events":[]}' };
+        if (url.includes('api.espn.com')) return { getResponseCode: () => 200, getContentText: () => '{"events":[]}' };
         const body = url.includes('geocoding') ? (opts.geocode ?? { results: [] }) : (opts.weather ?? {});
         return { getResponseCode: () => 200, getContentText: () => JSON.stringify(body) };
       },

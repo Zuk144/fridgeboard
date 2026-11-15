@@ -106,6 +106,13 @@ Updated Nov 6, 2026 (M2 built; "On TV tonight" card added). A fresh session shou
   real flow: not set up, unlock, wrong passphrase, stored key on reload, offline, stale, bad key,
   forget this device. (The JSONP fallback it also checked was removed on Nov 6.)
 
+## "On TV tonight" live (Nov 15)
+
+- Script Version 2 (TV) deployed from Chrome; the next deploy's check said `tv error espn_http_403`:
+  ESPN refuses Google's servers on `site.api.espn.com`. A test run in the Apps Script editor showed
+  `site.web.api.espn.com` answers Google with 200 (same JSON, compared league by league), so the
+  script now asks that host first and falls back to the old one (`ESPN_HOSTS`). Script Version 3.
+
 ## Holiday countdown card (Nov 15)
 
 - `src/modules/countdown.ts` + `holidayCard()` in `src/logic/holidays.ts`: the countdown grew from
@@ -137,7 +144,7 @@ Every deploy now encrypts the config, checks it opens (`decrypt-check`), and cal
 
 ## Waiting on Zuk
 
-### Update the Google script for "On TV tonight" (5 minutes)
+### (Done Nov 15) Update the Google script for "On TV tonight"
 
 The fridge page already has the TV card; it stays hidden until the script sends games.
 
