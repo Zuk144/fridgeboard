@@ -55,10 +55,15 @@ export type Layout = Partial<Record<SlotId, Box>>;
 export const TV_HEAD = 58;
 export const TV_ROW = 48;
 const TV_PAD = 14;
-/** Today never shrinks below this to make room for the TV band; the band shows fewer rows instead. */
+/**
+ * Today never shrinks below its minimum to make room for the bands below it (the countdown card,
+ * the TV band); they show less instead. The minimum is what today's list needs, between
+ * TODAY_FLOOR (a quiet day: the title, a chip row and two lines) and TODAY_MIN (a full day).
+ */
 export const TODAY_MIN = 460;
-/** With the calendar on, the band shows at most this many rows (six games) and "+N more". */
-const TV_MAX_ROWS = 3;
+export const TODAY_FLOOR = 360;
+/** With the calendar on, the band shows at most this many rows (eight games) and "+N more". */
+const TV_MAX_ROWS = 4;
 
 /** Holiday countdown card: a kraft-paper strip between Today and This Week. */
 export const COUNTDOWN_H = 108;
@@ -68,8 +73,10 @@ export function tvBandHeight(rows: number): number {
 }
 
 export interface LayoutOptions {
-  /** Rows of games the TV band would like (two games per row). */
+  /** Rows of games the TV band would like. */
   tvRows?: number;
+  /** Height today's list needs (clamped to TODAY_FLOOR..TODAY_MIN); TODAY_MIN when left out. */
+  todayNeed?: number;
 }
 
 /** Boxes for the active slots. `active` holds every slot that has something to show. */
@@ -117,18 +124,19 @@ export function planLayout(stage: Pick<Stage, 'W' | 'H'>, on: Set<SlotId>, opts:
   }
   const weekH = on.has('week') ? 420 : 0;
   // TV rows that fit above Today's minimum, with `cd` units already given to the countdown card.
+  const todayMin = Math.max(TODAY_FLOOR, Math.min(TODAY_MIN, opts.todayNeed ?? TODAY_MIN));
   const tvRowsWith = (cd: number) =>
-    Math.min(tvWant, TV_MAX_ROWS, Math.floor((bottomY - weekH - y - cd - TODAY_MIN - TV_HEAD - TV_PAD) / TV_ROW));
-  // The countdown card shows only while Today keeps TODAY_MIN. It may cost the TV band rows, but
-  // never below two (or below what the band had, if that was less), so it never pushes the games
-  // off the page; then the small tag next to "Today" carries the countdown instead.
+    Math.min(tvWant, TV_MAX_ROWS, Math.floor((bottomY - weekH - y - cd - todayMin - TV_HEAD - TV_PAD) / TV_ROW));
+  // The countdown card shows only while Today keeps its minimum, and only if the TV band keeps
+  // at least three rows (or every row it had, if that was fewer). The games come first on a big
+  // sports day; then the small tag next to "Today" carries the countdown instead.
   let cdH = on.has('countdown') ? COUNTDOWN_H : 0;
-  if (cdH && bottomY - weekH - y - cdH < TODAY_MIN) cdH = 0;
+  if (cdH && bottomY - weekH - y - cdH < todayMin) cdH = 0;
   if (cdH && tvWant) {
     const before = Math.max(0, tvRowsWith(0));
-    if (before >= 1 && tvRowsWith(cdH) < Math.min(before, 2)) cdH = 0;
+    if (before >= 1 && tvRowsWith(cdH) < Math.min(before, 3)) cdH = 0;
   }
-  // The TV band goes under This Week and takes its room from Today, down to TODAY_MIN.
+  // The TV band goes under This Week and takes its room from Today, down to its minimum.
   if (tvWant) {
     const rows = tvRowsWith(cdH);
     if (rows >= 1) {

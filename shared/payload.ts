@@ -96,6 +96,13 @@ export interface TvGame {
   network: string;
   /** In progress when the script looked (or past its start time). */
   live: boolean;
+  /** Scores, once the game has started (live or final). */
+  awayScore?: number;
+  homeScore?: number;
+  /** Game clock while it's on ("Q3 8:24", "Half", "End Q1", "OT 2:10"), "Final" when over. */
+  clock?: string;
+  /** Over. Only the family's teams stay listed after the final, for the rest of the day. */
+  final?: boolean;
   /** Key of a ticked sports calendar whose team plays (highlighted in its colors). */
   fav?: string;
 }

@@ -5,8 +5,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Board } from '../shared/payload';
 import { SCENARIOS, makeFixture } from './fixtures/boards';
-import { buildCtx, planBoard } from '../src/context';
-import { planLayout, stageFor, TODAY_MIN, type Box, type SlotId } from '../src/logic/layout';
+import { buildCtx, planBoard, todayNeed } from '../src/context';
+import { planLayout, stageFor, TODAY_FLOOR, TODAY_MIN, type Box, type SlotId } from '../src/logic/layout';
 import { tvFit, tvGamesNow, tvTitle } from '../src/logic/tv';
 import { DEFAULT_TOGGLES, type Toggles } from '../src/modules/types';
 import { togglesFrom } from '../src/config';
@@ -29,6 +29,9 @@ function render(name: string, opts: { toggles?: Toggles; stage?: ReturnType<type
   const html = plan.parts.map((p) => p.html).join('\n');
   return { f, ctx, plan, html, ids: plan.parts.map((p) => p.id) };
 }
+
+/** The minimum height this board's Today keeps (what its list needs, within the floor and cap). */
+const todayMinOf = (r: ReturnType<typeof render>) => Math.max(TODAY_FLOOR, Math.min(TODAY_MIN, todayNeed(r.f.board, r.f.now, r.ctx) ?? TODAY_MIN));
 
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
@@ -112,11 +115,12 @@ describe('every fixture renders', () => {
 
   it('game day before kickoff: tape, late tag, sticky and the countdown tag', () => {
     const r = render('gameday');
-    expect(r.ids).toEqual(['header', 'game', 'today', 'week', 'weather', 'kitchen', 'nextup']);
+    // Today's list is short, so the Thanksgiving card fits under it even with the game tape.
+    expect(r.ids).toEqual(['header', 'game', 'today', 'countdown', 'week', 'weather', 'kitchen', 'nextup']);
     expect(r.html).toContain('8:20 tonight');
     expect(r.html).toContain('in 4h 40m');
     expect(r.html).toContain('LATE GAME');
-    expect(r.html).toContain('11 days to Thanksgiving');
+    expect(r.html).toContain('<span class="cd-num">11</span><span class="cd-words">days to Thanksgiving</span>');
     expect(r.html).toContain('in 50 min');
     expect(r.html).toContain('Jacket weather');
     expect(r.html).toContain('updated 6 min ago');
@@ -184,7 +188,7 @@ describe('every fixture renders', () => {
 });
 
 describe('On TV tonight', () => {
-  it('lists games under This Week, in two columns, matchup · time · network', () => {
+  it('lists games under This Week, one full line each when they fit: matchup · time · network', () => {
     const r = render('tv-thursday');
     expect(r.ids).toContain('tv');
     const tv = r.plan.parts.find((p) => p.id === 'tv')!;
@@ -194,7 +198,28 @@ describe('On TV tonight', () => {
     expect(tv.html).toContain('Bears @ Packers');
     expect(tv.html).toContain('8:15');
     expect(tv.html).toContain('Prime Video');
-    expect(tv.html).toMatch(/Celtics @ 76ers<\/span><span class="tv-dot">·<\/span><span class="tv-live hand">on now/);
+    // Three games, three full-width lines.
+    expect(tv.html.match(/class="tv-g"/g)).toHaveLength(3);
+    expect(tv.html).toContain('width:986px');
+    // On now: scores next to the teams (the leader in red) and the game clock.
+    expect(tv.html).toMatch(/Celtics <span class="tv-sc lead">54<\/span> @ 76ers <span class="tv-sc">51<\/span><\/span><span class="tv-dot">·<\/span><span class="tv-live hand">Half/);
+  });
+
+  it('keeps "on now" when an old board has no clock, and shows the final of a family team', () => {
+    const f = makeFixture('tv-thursday')!;
+    const b: Board = JSON.parse(JSON.stringify(f.board));
+    for (const g of b.tv!.games) { delete g.clock; delete g.awayScore; delete g.homeScore; }
+    const ctx = buildCtx(b, f.now, { stage: FRIDGE, toggles: DEFAULT_TOGGLES, offline: false, problem: '' });
+    const html = planBoard(b, f.now, ctx).parts.find((p) => p.id === 'tv')!.html;
+    expect(html).toMatch(/Celtics @ 76ers<\/span><span class="tv-dot">·<\/span><span class="tv-live hand">on now/);
+    // A Steelers final stays listed, score and "Final", and no network.
+    const g0 = b.tv!.games[0];
+    b.tv!.games = [{ ...g0, away: 'Steelers', home: 'Bengals', fav: 'steelers', live: false, final: true, awayScore: 24, homeScore: 17, clock: 'Final', start: f.now - 4 * 3600000, day: ctx.today }];
+    const fin = planBoard(b, f.now, ctx).parts.find((p) => p.id === 'tv')!.html;
+    expect(fin).toContain('Steelers <span class="tv-sc lead">24</span> @ Bengals <span class="tv-sc">17</span>');
+    expect(fin).toContain('<span class="tv-final hand">Final</span>');
+    expect(fin).not.toContain('tv-net');
+    expect(fin).not.toContain('on now');
   });
 
   it('hides the card when nothing is on, when switched off, and for an older script', () => {
@@ -213,20 +238,33 @@ describe('On TV tonight', () => {
       for (const stage of [FRIDGE, stageFor(720, 1280)]) {
         for (const noHolidays of [false, true]) {
           const r = render(name, { stage, noHolidays });
-          expect(r.plan.layout.today!.h, `${name} ${stage.H}`).toBeGreaterThanOrEqual(TODAY_MIN);
+          expect(r.plan.layout.today!.h, `${name} ${stage.H}`).toBeGreaterThanOrEqual(todayMinOf(r));
+          expect(r.plan.layout.today!.h).toBeGreaterThanOrEqual(TODAY_FLOOR);
         }
       }
     }
     const sat = render('tv-saturday', { noHolidays: true });
-    expect(sat.plan.layout.tv!.h).toBeLessThanOrEqual(58 + 3 * 48 + 14);
-    expect(sat.html).toContain('+5 more on TV'); // 8 sent, 6 fit, plus 3 the script left out
-    // Game day at 1229: one row, and the Steelers game is one of the two.
+    expect(sat.plan.layout.tv!.h).toBeLessThanOrEqual(58 + 4 * 48 + 14);
+    expect(sat.html).toContain('+3 more on TV'); // 8 sent, all 8 fit, plus 3 the script left out
+    // Game day at 1229 (a full Today): two rows, four games, the Steelers game always one of them.
     const sun = render('tv-sunday', { noHolidays: true });
     const tv = sun.plan.parts.find((p) => p.id === 'tv')!.html;
     expect(tv).toContain('Steelers @ Bengals');
     expect(tv).toMatch(/tv-match tv-fav" style="background:#FFB612;color:#101820">Steelers @ Bengals/);
-    expect(tv).toContain('+8 more on TV');
+    expect(tv).toContain('+6 more on TV');
     expect(render('tv-sunday', { stage: stageFor(720, 1280), noHolidays: true }).plan.layout.tv!.h).toBeGreaterThan(sun.plan.layout.tv!.h);
+  });
+
+  it('a quiet game day (just the game on the calendar) gives the band three rows', () => {
+    const f = makeFixture('tv-sunday')!;
+    const today = f.board.today;
+    f.board.events = f.board.events.filter((e) => e.day !== today || e.kind === 'sports' || e.allDay);
+    const ctx = buildCtx(f.board, f.now, { stage: FRIDGE, toggles: DEFAULT_TOGGLES, offline: false, problem: '' });
+    const p = planBoard(f.board, f.now, ctx);
+    expect(p.parts.map((x) => x.id)).toContain('game');
+    expect(p.layout.tv!.h).toBe(58 + 3 * 48 + 14);
+    expect(p.layout.today!.h).toBeGreaterThanOrEqual(TODAY_FLOOR);
+    expect(p.parts.find((x) => x.id === 'tv')!.html.match(/class="tv-g"/g)).toHaveLength(6);
   });
 
   it('writes college ranks and shows the first network when two columns are tight', () => {
@@ -366,10 +404,19 @@ describe('holiday countdown card', () => {
     expect(card(f.now + 2 * 86400000)).toContain('Happy Thanksgiving!');
   });
 
-  it('shares the page with the TV band, which keeps two rows', () => {
-    const r = render('tv-saturday');
-    expect(r.ids).toContain('countdown');
-    expect(r.plan.layout.tv!.h).toBe(58 + 2 * 48 + 14);
+  it('shares the page with a light TV night, and steps aside on a big sports day', () => {
+    const f = makeFixture('tv-saturday')!;
+    f.board.tv!.games = f.board.tv!.games.slice(0, 2);
+    f.board.tv!.more = 0;
+    const ctx = buildCtx(f.board, f.now, { stage: FRIDGE, toggles: DEFAULT_TOGGLES, offline: false, problem: '' });
+    const light = planBoard(f.board, f.now, ctx);
+    expect(light.parts.map((p) => p.id)).toContain('countdown');
+    expect(light.layout.tv!.h).toBe(58 + 2 * 48 + 14); // both games, one full line each
+    const busy = render('tv-saturday');
+    expect(busy.ids).not.toContain('countdown');
+    expect(busy.plan.layout.tv!.h).toBe(58 + 4 * 48 + 14);
+    expect(busy.html).toContain('12 days to Thanksgiving');
+    const r = busy;
     expect(r.plan.layout.today!.h).toBeGreaterThanOrEqual(TODAY_MIN);
   });
 
@@ -382,8 +429,9 @@ describe('holiday countdown card', () => {
     }
   });
 
-  it('gives way on a game day and the tag next to Today carries the countdown', () => {
-    const r = render('gameday');
+  it('gives way on a game day with games on TV, and the tag next to Today carries the countdown', () => {
+    const r = render('tv-sunday');
+    expect(r.ids).toContain('game');
     expect(r.ids).not.toContain('countdown');
     expect(r.html).toContain('11 days to Thanksgiving');
   });

@@ -408,6 +408,7 @@ describe('kitchen list', () => {
 });
 
 describe('board: on TV tonight', () => {
+  const h0 = () => setUp(espnFetch({}));
   // One request per league to the first ESPN host; the second host is only a fallback.
   const espnUrls = (h: Harness) => h.fetched.filter((u) => u.startsWith('https://site.web.api.espn.com/'));
   const line = (g: TvGame) => `${g.awayRank ? `#${g.awayRank} ` : ''}${g.away} @ ${g.homeRank ? `#${g.homeRank} ` : ''}${g.home} · ${g.time} · ${g.network}${g.live ? ' · live' : ''}`;
@@ -439,6 +440,48 @@ describe('board: on TV tonight', () => {
     expect(tv.more).toBe(0);
     // Never a channel number, a local station or a radio network.
     expect(JSON.stringify(tv)).not.toMatch(/WLUK|Westwood|FDSN|KJZZ|Altitude/);
+  });
+
+  it('sends live scores and a short game clock', () => {
+    const thu = tvAt(setUp(espnFetch(TV_DAYS.thursday)), '2026-11-12T19:45');
+    expect(thu.games[0]).toMatchObject({ away: 'Celtics', awayScore: 54, homeScore: 51, clock: 'Half', live: true });
+    // Not started yet: no score, no clock.
+    expect(thu.games[1]).not.toHaveProperty('awayScore');
+    expect(thu.games[1]).not.toHaveProperty('clock');
+    const sat = tvAt(setUp(espnFetch(TV_DAYS.saturday)), '2026-11-14T12:40');
+    const by = (tv: typeof sat, away: string) => tv.games.find((g) => g.away === away)!;
+    expect(by(sat, 'Ohio State')).toMatchObject({ awayScore: 24, homeScore: 3, clock: 'Q3 9:40' });
+    expect(by(sat, 'Northwestern').clock).toBe('Q2 1:05');
+    const sun = tvAt(setUp(espnFetch(TV_DAYS.sunday)), '2026-11-15T15:40');
+    expect(by(sun, 'Falcons')).toMatchObject({ awayScore: 27, homeScore: 27, clock: 'OT 6:10' });
+    expect(by(sun, 'Texans').clock).toBe('Q4 0:48');
+    // A finished game of a team nobody follows drops off.
+    expect(sun.games.find((g) => g.away === 'Bills')).toBeUndefined();
+    expect(h0().fn('gameClock_', { state: 'in', statusName: 'STATUS_END_PERIOD', period: 1 })).toBe('End Q1');
+    expect(h0().fn('gameClock_', { state: 'in', statusName: 'STATUS_IN_PROGRESS', period: 6, clock: '1:00' })).toBe('2OT 1:00');
+    expect(h0().fn('gameClock_', { state: 'post', period: 5 })).toBe('Final/OT');
+    expect(h0().fn('gameClock_', { state: 'in', statusName: 'STATUS_DELAYED', period: 2, shortDetail: 'Delayed' })).toBe('Delayed');
+  });
+
+  it("keeps the family's team after the final, with the score, for the rest of the day", () => {
+    const day = { nfl: [{ away: T.steelers, home: T.bengals, at: '2026-11-15T13:00', nets: ['CBS'], state: 'post' as const, score: [24, 17] as [number, number] }] };
+    const tv = tvAt(setUp(espnFetch(day)), '2026-11-15T16:30');
+    expect(tv.games).toHaveLength(1);
+    expect(tv.games[0]).toMatchObject({ away: 'Steelers', fav: 'steelers', final: true, live: false, awayScore: 24, homeScore: 17, clock: 'Final' });
+  });
+
+  it('caches the scoreboard for a minute while games are on, 20 minutes otherwise', () => {
+    const live = setUp(espnFetch(TV_DAYS.thursday));
+    tvAt(live, '2026-11-12T19:45');
+    const ttl = (h: Harness) => [...h.cacheTtl.entries()].find(([k]) => k.startsWith('fb_tv'))![1];
+    expect(ttl(live)).toBe(60);
+    const quiet = setUp(espnFetch({ nfl: [{ away: T.bears, home: T.packers, at: '2026-11-12T20:15', nets: ['Prime Video'] }] }));
+    tvAt(quiet, '2026-11-12T10:00');
+    expect(ttl(quiet)).toBe(1200);
+    // Twenty minutes before kickoff it starts checking every minute.
+    const soon = setUp(espnFetch({ nfl: [{ away: T.bears, home: T.packers, at: '2026-11-12T20:15', nets: ['Prime Video'] }] }));
+    tvAt(soon, '2026-11-12T20:00');
+    expect(ttl(soon)).toBe(60);
   });
 
   it('reads networks from geoBroadcasts too, and spells them the same way', () => {

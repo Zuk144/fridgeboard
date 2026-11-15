@@ -27,6 +27,12 @@ export interface FakeGame {
   state?: 'pre' | 'in' | 'post';
   /** AP ranks [away, home]; 0 = unranked (ESPN sends 99). */
   ranks?: [number, number];
+  /** Score [away, home] once started. */
+  score?: [number, number];
+  period?: number;
+  clock?: string;
+  /** ESPN status name when it isn't the plain one for `state` (halftime, end of a quarter). */
+  status?: 'STATUS_HALFTIME' | 'STATUS_END_PERIOD';
 }
 
 const pro = (location: string, name: string, abbr: string): FakeTeam => ({ location, name, abbr, short: name });
@@ -74,7 +80,7 @@ function espnDate(local: string): string {
   return at(local).toISOString().replace(/:\d\d\.\d{3}Z$/, 'Z');
 }
 
-function competitor(t: FakeTeam, side: 'home' | 'away', rank: number | undefined, league: League) {
+function competitor(t: FakeTeam, side: 'home' | 'away', rank: number | undefined, league: League, score = '0') {
   const c: Record<string, unknown> = {
     id: String(nextId % 997), type: 'team', order: side === 'home' ? 0 : 1, homeAway: side, winner: false,
     team: {
@@ -82,7 +88,7 @@ function competitor(t: FakeTeam, side: 'home' | 'away', rank: number | undefined
       displayName: `${t.location} ${t.name}`, shortDisplayName: t.short, color: '1e2b4a', alternateColor: 'ffffff',
       isActive: true, logo: `https://a.espncdn.com/i/teamlogos/${league}/500/scoreboard/${t.abbr.toLowerCase()}.png`,
     },
-    score: '0',
+    score,
     records: [{ name: 'overall', abbreviation: 'Any', type: 'total', summary: '6-3' }],
   };
   if (league === 'cfb') c.curatedRank = { current: rank || 99 };
@@ -98,7 +104,11 @@ const STATUS = {
 export function espnEvent(league: League, g: FakeGame) {
   const id = String(nextId++);
   const date = espnDate(g.at);
-  const status = { clock: 0, displayClock: '0:00', period: g.state === 'in' ? 2 : 0, type: { ...STATUS[g.state || 'pre'], detail: g.at, shortDetail: g.at } };
+  const state = g.state || 'pre';
+  const type = g.status ? { ...STATUS.in, name: g.status } : STATUS[state];
+  const period = g.period ?? (state === 'in' ? 2 : state === 'post' ? 4 : 0);
+  const status = { clock: 0, displayClock: g.clock || '0:00', period, type: { ...type, detail: g.at, shortDetail: state === 'post' ? 'Final' : g.at } };
+  const score = (i: 0 | 1) => (g.score ? String(g.score[i]) : '0');
   const geo = [
     ...g.nets.map((n) => ({ type: { id: '1', shortName: 'TV' }, market: { id: '1', type: 'National' }, media: { shortName: n }, lang: 'en', region: 'us' })),
     ...(g.geo || []).map((x) => ({ type: { id: x.type === 'TV' ? '1' : '4', shortName: x.type }, market: { id: '2', type: x.market }, media: { shortName: x.name }, lang: 'en', region: 'us' })),
@@ -111,7 +121,7 @@ export function espnEvent(league: League, g: FakeGame) {
     competitions: [{
       id, uid: `s:20~l:28~e:${id}~c:${id}`, date, attendance: 0, timeValid: true, neutralSite: false,
       venue: { id: '3798', fullName: 'Somewhere Stadium', address: { city: 'Anytown', state: 'PA' }, indoor: false },
-      competitors: [competitor(g.home, 'home', g.ranks?.[1], league), competitor(g.away, 'away', g.ranks?.[0], league)],
+      competitors: [competitor(g.home, 'home', g.ranks?.[1], league, score(1)), competitor(g.away, 'away', g.ranks?.[0], league, score(0))],
       notes: [], status,
       broadcasts: g.nets.length ? [{ market: 'national', names: g.nets }] : [],
       broadcast: g.nets.join('/'),
@@ -155,21 +165,21 @@ export const TV_DAYS: Record<string, EspnDay> = {
       { away: T.bears, home: T.packers, at: '2026-11-12T20:15', nets: ['Prime Video'], geo: [{ type: 'TV', market: 'Home', name: 'WLUK' }, { type: 'Radio', market: 'National', name: 'Westwood One' }] },
     ],
     nba: [
-      { away: T.hornets, home: T.magic, at: '2026-11-12T19:00', nets: [], geo: local('FDSNFL'), state: 'in' },
-      { away: T.celtics, home: T.sixers, at: '2026-11-12T19:30', nets: ['Prime Video'], geo: local('NBCSB'), state: 'in' },
+      { away: T.hornets, home: T.magic, at: '2026-11-12T19:00', nets: [], geo: local('FDSNFL'), state: 'in', score: [88, 92], period: 4, clock: '6:12' },
+      { away: T.celtics, home: T.sixers, at: '2026-11-12T19:30', nets: ['Prime Video'], geo: local('NBCSB'), state: 'in', score: [54, 51], period: 2, status: 'STATUS_HALFTIME' },
       { away: T.kings, home: T.jazz, at: '2026-11-12T21:00', nets: [], geo: local('KJZZ') },
       { away: T.nuggets, home: T.lakers, at: '2026-11-12T22:00', nets: ['Prime Video'], geo: local('Altitude') },
     ],
     cfb: [
-      { away: T.navy, home: T.memphis, at: '2026-11-12T19:30', nets: ['ESPN'], state: 'in', ranks: [0, 0] },
+      { away: T.navy, home: T.memphis, at: '2026-11-12T19:30', nets: ['ESPN'], state: 'in', ranks: [0, 0], score: [14, 10], period: 2, clock: '4:31' },
     ],
   },
   saturday: {
     cfb: [
-      { away: T.ohioState, home: T.purdue, at: '2026-11-14T12:00', nets: ['FOX'], state: 'in', ranks: [2, 0] },
-      { away: T.wake, home: T.duke, at: '2026-11-14T12:00', nets: ['ESPN'], state: 'in', ranks: [0, 0] },
-      { away: T.northwestern, home: T.iowa, at: '2026-11-14T12:00', nets: ['ABC'], state: 'in', ranks: [0, 0] },
-      { away: T.illinois, home: T.rutgers, at: '2026-11-14T12:00', nets: ['BTN'], state: 'in', ranks: [21, 0] },
+      { away: T.ohioState, home: T.purdue, at: '2026-11-14T12:00', nets: ['FOX'], state: 'in', ranks: [2, 0], score: [24, 3], period: 3, clock: '9:40' },
+      { away: T.wake, home: T.duke, at: '2026-11-14T12:00', nets: ['ESPN'], state: 'in', ranks: [0, 0], score: [10, 10], period: 1, status: 'STATUS_END_PERIOD' },
+      { away: T.northwestern, home: T.iowa, at: '2026-11-14T12:00', nets: ['ABC'], state: 'in', ranks: [0, 0], score: [7, 17], period: 2, clock: '1:05' },
+      { away: T.illinois, home: T.rutgers, at: '2026-11-14T12:00', nets: ['BTN'], state: 'in', ranks: [21, 0], score: [21, 14], period: 3, clock: '12:00' },
       { away: T.georgia, home: T.oleMiss, at: '2026-11-14T15:30', nets: ['CBS'], ranks: [5, 12] },
       { away: T.pennState, home: T.michigan, at: '2026-11-14T15:30', nets: ['ABC', 'ESPN2'], ranks: [9, 3] },
       { away: T.memphis, home: T.utsa, at: '2026-11-14T15:30', nets: ['ESPN+'], geo: [{ type: 'Streaming', market: 'National', name: 'ESPN+' }], ranks: [24, 0] },
@@ -187,11 +197,11 @@ export const TV_DAYS: Record<string, EspnDay> = {
   },
   sunday: {
     nfl: [
-      { away: T.lions, home: T.vikings, at: '2026-11-15T13:00', nets: ['FOX'], state: 'in' },
-      { away: T.bills, home: T.jets, at: '2026-11-15T13:00', nets: ['CBS'], state: 'post' },
-      { away: T.ravens, home: T.browns, at: '2026-11-15T13:00', nets: ['CBS'], state: 'in' },
-      { away: T.texans, home: T.jaguars, at: '2026-11-15T13:00', nets: ['CBS'], state: 'in' },
-      { away: T.falcons, home: T.saints, at: '2026-11-15T13:00', nets: ['FOX'], state: 'in' },
+      { away: T.lions, home: T.vikings, at: '2026-11-15T13:00', nets: ['FOX'], state: 'in', score: [17, 20], period: 4, clock: '2:41' },
+      { away: T.bills, home: T.jets, at: '2026-11-15T13:00', nets: ['CBS'], state: 'post', score: [31, 13] },
+      { away: T.ravens, home: T.browns, at: '2026-11-15T13:00', nets: ['CBS'], state: 'in', score: [10, 6], period: 3, clock: '7:19' },
+      { away: T.texans, home: T.jaguars, at: '2026-11-15T13:00', nets: ['CBS'], state: 'in', score: [20, 23], period: 4, clock: '0:48' },
+      { away: T.falcons, home: T.saints, at: '2026-11-15T13:00', nets: ['FOX'], state: 'in', score: [27, 27], period: 5, clock: '6:10' },
       { away: T.chiefs, home: T.broncos, at: '2026-11-15T16:05', nets: ['CBS'] },
       { away: T.cowboys, home: T.niners, at: '2026-11-15T16:25', nets: ['FOX'] },
       { away: T.titans, home: T.colts, at: '2026-11-15T16:25', nets: ['FOX'] },

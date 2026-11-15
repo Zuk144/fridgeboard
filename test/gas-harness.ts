@@ -159,6 +159,8 @@ export interface Harness {
   ss: FakeSpreadsheet;
   props: Map<string, string>;
   cache: Map<string, string>;
+  /** Seconds each cache key was put for. */
+  cacheTtl: Map<string, number>;
   fetched: string[];
   /** Call any top-level function in Code.gs. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -176,6 +178,7 @@ export function loadCode(opts: { calendars?: FakeCalendarSpec[]; weather?: unkno
   const ss = new FakeSpreadsheet();
   const props = new Map<string, string>();
   const cache = new Map<string, string>();
+  const cacheTtl = new Map<string, number>();
   const fetched: string[] = [];
   let cals = (opts.calendars || []).map((c) => ({ spec: c, cal: fakeCalendar(c) }));
 
@@ -202,7 +205,7 @@ export function loadCode(opts: { calendars?: FakeCalendarSpec[]; weather?: unkno
     CacheService: {
       getScriptCache: () => ({
         get: (k: string) => (cache.has(k) ? cache.get(k)! : null),
-        put: (k: string, v: string) => { cache.set(k, v); },
+        put: (k: string, v: string, ttl?: number) => { cache.set(k, v); cacheTtl.set(k, ttl ?? 600); },
       }),
     },
     LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
@@ -234,7 +237,7 @@ export function loadCode(opts: { calendars?: FakeCalendarSpec[]; weather?: unkno
   };
   const parse = (out: { content: string }) => JSON.parse(out.content);
   return {
-    ss, props, cache, fetched, fn,
+    ss, props, cache, cacheTtl, fetched, fn,
     get: (params) => parse(fn('doGet', { parameter: params }) as { content: string }),
     post: (body, params = {}) => parse(fn('doPost', { parameter: params, postData: { contents: JSON.stringify(body), type: 'text/plain' } }) as { content: string }),
     setCalendars: (next) => { cals = next.map((c) => ({ spec: c, cal: fakeCalendar(c) })); },

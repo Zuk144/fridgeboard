@@ -1,5 +1,6 @@
 /**
- * The board: lays out the modules, renders them for `now`, polls the script every 5 minutes,
+ * The board: lays out the modules, renders them for `now`, polls the script every 5 minutes
+ * (every 2 while a game on the TV card is on),
  * ticks the clock every minute, and handles night mode, overlays and the hidden settings.
  * Only DOM nodes whose HTML actually changed get touched, to keep repaints cheap on the fridge.
  */
@@ -14,11 +15,14 @@ import { renderNight } from './screens/night';
 import { renderOverlay, type Overlay } from './screens/overlays';
 import { renderNote } from './screens/unlock';
 import { ApiProblem } from './api';
+import { anyGameOn } from './logic/tv';
 import { store } from './store';
 import type { Shell } from './shell';
 import { at, esc } from './ui/html';
 
 const POLL_MS = 5 * 60000;
+/** While a game on the TV card is on, check for new scores this often instead. */
+const LIVE_POLL_MS = 2 * 60000;
 const WAKE_MS = 60000;
 const OVERLAY_IDLE_MS = 2 * 60000;
 const HOLD_MS = 1200;
@@ -108,6 +112,8 @@ export class App {
         this.board = b;
         store.setBoard(b);
       }
+      const now = this.o.now();
+      if (this.o.toggles.tv && anyGameOn(b, now, this.clockFor(b)(now).dayKey)) next = LIVE_POLL_MS;
     } catch (e) {
       if (e instanceof ApiProblem) {
         this.problem = e.message;

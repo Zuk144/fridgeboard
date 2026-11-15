@@ -188,7 +188,7 @@ Each calendar in config gets a `kind` that changes how it renders:
 - **`holidays`:** all-day chips at the top of Today and the week strip.
   - A `hideObservances` option (default **true**) drops observance-only entries like "Black Friday" and keeps public holidays. Google labels these in the event description ("Public holiday" vs "Observance").
   - The next major holiday (Thanksgiving, Christmas, New Year's, Easter, the Fourth, Halloween, Mother's/Father's Day) gets a **countdown card**: a full-width kraft-paper strip between Today and This Week, "11 days to Thanksgiving" with the number in red pen and the date in pencil, "Thanksgiving is tomorrow!" the day before, "Happy Thanksgiving!" on the day. Tapping it opens that day. It only reaches as far as the board's window (`daysAhead`, 14 days).
-  - The card shows only while Today keeps its minimum height, and it may cost the TV band rows but never below two (or below what the band had). When it doesn't fit (a game day, a short screen), the small kraft tag next to "Today" carries the countdown instead.
+  - The card shows only while Today keeps its minimum height, and only if the TV band keeps three rows (or every row it had, if fewer). When it doesn't fit (a big sports day, a short screen), the small kraft tag next to "Today" carries the countdown instead.
 - **Collisions are features:** Broncos @ Steelers on Fri Nov 27, the day after Thanksgiving, should read as one fun day, not a cluttered one.
 
 Reference data at time of writing (for fixtures, not hardcoding): Steelers @ Bengals Sun Nov 15 8:20 pm, Steelers @ Eagles Sun Nov 22 4:25 pm, Broncos @ Steelers Fri Nov 27 3:00 pm; Veterans Day Nov 11, Thanksgiving Nov 26.
@@ -204,18 +204,26 @@ Reference data at time of writing (for fixtures, not hardcoding): Steelers @ Ben
 - **On TV tonight** (added Nov 6, 2026): the NFL, NBA and college football games on TV today, so
   the family knows what's on. One line per game: matchup · local start time · network name
   ("Bears @ Packers · 8:15 · Prime Video"), never channel numbers.
-  - **Source:** ESPN's free, unofficial scoreboard JSON (`site.api.espn.com/apis/site/v2/sports/
+  - **Source:** ESPN's free, unofficial scoreboard JSON (`site.web.api.espn.com/apis/site/v2/sports/
     {football/nfl, basketball/nba, football/college-football}/scoreboard?dates=YYYYMMDD`, college
-    with `&groups=80&limit=300`), fetched by the script for the local date (no key), cached 20
-    minutes like the weather. Networks come from `broadcasts[].names` and
+    with `&groups=80&limit=300`; `site.api.espn.com` answers Google's servers with 403, so it's only
+    the fallback), fetched by the script for the local date (no key). Cached 20 minutes, or 1 minute
+    while a game is on or kicks off within 20 minutes (live scores). Networks come from `broadcasts[].names` and
     `geoBroadcasts[].media.shortName` (radio skipped), with spellings unified ("NFL Net" → "NFL
     Network"; ESPN+ stays streaming, not ESPN).
   - **Which games:** NFL and NBA on a national network: ABC, CBS, NBC, FOX, ESPN, ESPN2, TNT,
     TBS, truTV, NFL Network, NBA TV, Prime Video, Peacock, Netflix, FS1 (`FB.tvNetworks` in
     Code.gs; the Sheet's `tvNetworks` row replaces it). College: either team in the AP Top 25 on a
     TV network (the list above plus ESPNU, SEC Network, BTN, ACC Network, CBS Sports Network, FS2,
-    The CW), or any game on ABC, CBS, NBC or FOX. Finished games drop; games in progress stay,
-    marked "on now" in red pen. Sorted by start time, capped at 8 (`more` counts the rest).
+    The CW), or any game on ABC, CBS, NBC or FOX. Sorted by start time, capped at 8 (`more` counts
+    the rest).
+  - **Live scores (Nov 15):** once a game starts, the score sits next to each team (the leader's in
+    red pen) and the game clock replaces the start time in red pen: "Q3 8:24", "Half", "End Q1",
+    "OT 2:10", "2OT 1:00" (ESPN's `period`, `displayClock` and status name; a delay shows ESPN's
+    short word). An old board without a clock says "on now". Finished games drop, except your
+    teams': their final ("Steelers 24 @ Bengals 17 · Final", no network) stays for the rest of
+    the day. While a game is on, the fridge polls every 2 minutes instead of 5, so scores run
+    about 2–4 minutes behind (the script's 2-minute board cache sits in front of the TV cache).
   - **Your teams:** games of a team whose Sports calendar is ticked (the Steelers at minimum) wear
     the team colors, like the game-day pills, and are never cut by the cap. Matching uses the
     calendar's name ("Pittsburgh Steelers") and, for NFL/NBA calendars, its label.
@@ -224,16 +232,18 @@ Reference data at time of writing (for fixtures, not hardcoding): Steelers @ Ben
     card then says "The game listings didn't come through." If only one league fails, the others
     still show (`tv.failed`) and the failed one is retried on the next board.
   - **On the board:** a band under This Week, "On TV tonight" (or "On TV today" when something
-    starts before 5 pm) with a little TV doodle, games in two columns in start order. It takes its
-    room from Today but never shrinks Today below 460 units and shows at most three rows (six
-    games); what doesn't fit becomes "+N more on TV" (your teams' games kept first). The weather
-    strip gives up 38 units while it shows. On the fridge's 1229 viewport a Steelers Sunday (game
-    tape on) gets one row; 1280 gets three. Hidden when nothing is on. An old board drops games
+    starts before 5 pm) with a little TV doodle, in start order: up to four games get a full-width
+    line each, more go in two columns. It takes its room from Today, down to what today's list
+    needs (title, chips and the timeline rows, at least two: between 360 and 460 units), and shows
+    at most four rows (eight games); what doesn't fit becomes "+N more on TV" (your teams' games
+    first, then games on now). The weather strip gives up 38 units while it shows. On the fridge's
+    1229 viewport a Steelers Sunday on a quiet calendar gets three rows (six games); a full Sunday
+    gets two. The holiday countdown card steps aside unless the band keeps three rows (§5.5). Hidden when nothing is on. An old board drops games
     that must be over (4 h after kickoff for football, 3 h for the NBA).
 - **Clock:** ticks client-side. The countdown and "past event" fading update every minute without refetching.
 
 ## 7. Fridge behavior
-- **Auto-refresh:** poll the script's `board` every 5 minutes (cache-busted). Re-render only when `generatedAt` or the kitchen summary changes. The clock and countdowns tick locally on each minute boundary, and only the parts of the page whose HTML changed are touched. After a failed poll it retries in 1, 2, 4 minutes, then every 5. Waking from sleep (a long gap between ticks, or the page becoming visible) polls right away.
+- **Auto-refresh:** poll the script's `board` every 5 minutes (every 2 while a game on the TV card is on; cache-busted). Re-render only when `generatedAt` or the kitchen summary changes. The clock and countdowns tick locally on each minute boundary, and only the parts of the page whose HTML changed are touched. After a failed poll it retries in 1, 2, 4 minutes, then every 5. Waking from sleep (a long gap between ticks, or the page becoming visible) polls right away.
 - **Fetch:** plain `fetch` (the probe showed the fridge follows Apps Script's redirect). A failed fetch counts as offline: the last good board stays up with the offline badge. (The script still answers JSONP-style `callback=` requests, but the page no longer uses them.)
 - **Night mode:** between `nightStartHour` and `nightEndHour` (default 10 pm–6 am) the page goes dark: a dim clock, the date, the next morning's first event (tomorrow's before midnight, today's after), the away note, the temperature. A tap wakes the full board in a dark theme for 60 seconds.
 - **Offline / failure:** keep showing the last good board (saved in the fridge's localStorage) with a red-pen "Offline · last updated 7:40 am" badge where "updated X min ago" was.

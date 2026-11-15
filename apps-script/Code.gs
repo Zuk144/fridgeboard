@@ -42,7 +42,9 @@ var FB = {
   // A ranked college game also counts as on TV on these.
   tvCollegeNetworks: ['ESPNU', 'SEC Network', 'BTN', 'ACC Network', 'CBS Sports Network', 'FS2', 'The CW'],
   tvMax: 8,
-  tvCacheSeconds: 1200
+  tvCacheSeconds: 1200,
+  // While a game is on: scores refresh about this often (the board's own 2-minute cache sits on top).
+  tvLiveCacheSeconds: 60
 };
 
 // ESPN's free scoreboard JSON (unofficial, no key). The fridge never calls it; this script does.
@@ -475,13 +477,21 @@ function getTv_(s, now, tz, rows) {
     });
     // Only a complete answer is cached, so a league that failed is tried again on the next board.
     if (!raw.failed.length) {
-      try { cache.put(key, JSON.stringify(raw), FB.tvCacheSeconds); } catch (err) { /* fine */ }
+      try { cache.put(key, JSON.stringify(raw), tvCacheFor_(raw.games, now)); } catch (err) { /* fine */ }
     }
   }
   if (raw.failed.length === leagues.length) return { error: raw.error, games: [], more: 0 };
   var out = pickTv_(raw.games, s, now, day, tz, tvFavs_(rows));
   if (raw.failed.length) out.failed = raw.failed;
   return out;
+}
+
+/** Live scores go stale fast: a short cache while any game is on or kicks off within 20 minutes. */
+function tvCacheFor_(games, now) {
+  var busy = games.some(function (g) {
+    return g.state === 'in' || (g.state === 'pre' && g.start - now < 20 * 60000 && now - g.start < 5 * 3600000);
+  });
+  return busy ? FB.tvLiveCacheSeconds : FB.tvCacheSeconds;
 }
 
 function tvLeagues_(text) {
@@ -545,11 +555,18 @@ function shapeGame_(ev, lg) {
     else if (c && c.homeAway === 'away') away = c;
   });
   if (!home || !away || !home.team || !away.team) return null;
-  var st = (ev.status && ev.status.type) || (comp.status && comp.status.type) || {};
+  var status = ev.status || comp.status || {};
+  var st = status.type || {};
   return {
     league: lg,
     start: start,
     state: String(st.state || 'pre'),
+    statusName: String(st.name || ''),
+    shortDetail: String(st.shortDetail || ''),
+    period: Number(status.period) || 0,
+    clock: String(status.displayClock || ''),
+    awayScore: score_(away),
+    homeScore: score_(home),
     away: teamName_(away.team),
     home: teamName_(home.team),
     awayFull: String(away.team.displayName || ''),
@@ -558,6 +575,30 @@ function shapeGame_(ev, lg) {
     homeRank: rank_(home),
     nets: networksOf_(comp)
   };
+}
+
+/** A team's score as a number, or -1 when ESPN sends none. */
+function score_(c) {
+  var n = parseInt(c && c.score, 10);
+  return isFinite(n) && n >= 0 ? n : -1;
+}
+
+/** "Q3", "OT", "2OT" for a period number. Football and the NBA both play four quarters. */
+function periodName_(p) {
+  if (p <= 4) return 'Q' + p;
+  return (p === 5 ? '' : (p - 4)) + 'OT';
+}
+
+/** The game clock in a few characters: "Q3 8:24", "Half", "End Q1", "OT 2:10", "Final/OT". */
+function gameClock_(g) {
+  if (g.state === 'post') return g.period > 4 ? 'Final/OT' : 'Final';
+  if (g.state !== 'in') return '';
+  if (g.statusName === 'STATUS_HALFTIME') return 'Half';
+  if (!g.period) return '';
+  if (g.statusName === 'STATUS_END_PERIOD') return 'End ' + periodName_(g.period);
+  if (g.statusName === 'STATUS_IN_PROGRESS' && g.clock) return periodName_(g.period) + ' ' + g.clock;
+  // Delayed, suspended and the like: ESPN's own short words, kept short.
+  return g.shortDetail.length <= 12 ? g.shortDetail : '';
 }
 
 function teamName_(t) {
@@ -638,8 +679,11 @@ function pickTv_(games, s, now, day, tz, favs) {
   var college = national.concat(big, FB.tvCollegeNetworks.map(squash_));
   var list = [];
   games.forEach(function (g) {
-    if (g.state === 'post') return;
-    var live = g.state === 'in' || g.start <= now;
+    var fav = favOf_(g, favs);
+    // Finished games drop off, except the family's teams: their final score stays for the day.
+    var final = g.state === 'post';
+    if (final && !(fav && fmt_(new Date(g.start), tz, 'yyyy-MM-dd') === day)) return;
+    var live = !final && (g.state === 'in' || g.start <= now);
     if (!live && fmt_(new Date(g.start), tz, 'yyyy-MM-dd') !== day) return;
     var ok = g.league === 'cfb' ? college : national;
     var nets = g.nets.filter(function (n) { return ok.indexOf(squash_(n)) >= 0; });
@@ -663,7 +707,13 @@ function pickTv_(games, s, now, day, tz, favs) {
       if (g.awayRank) item.awayRank = g.awayRank;
       if (g.homeRank) item.homeRank = g.homeRank;
     }
-    var fav = favOf_(g, favs);
+    if (final) item.final = true;
+    if ((live || final) && g.awayScore >= 0 && g.homeScore >= 0 && g.state !== 'pre') {
+      item.awayScore = g.awayScore;
+      item.homeScore = g.homeScore;
+    }
+    var clock = gameClock_(g);
+    if (clock) item.clock = clock;
     if (fav) item.fav = fav;
     list.push(item);
   });

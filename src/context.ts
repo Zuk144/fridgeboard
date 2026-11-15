@@ -11,6 +11,8 @@ import { freshness } from './logic/freshness';
 import { readableInk } from './logic/ink';
 import { planLayout, type Box, type Layout, type SlotId, type Stage } from './logic/layout';
 import { tvRowsWanted } from './logic/tv';
+import { bucketDay } from './logic/days';
+import { eventState } from './logic/nextup';
 
 export const PAPER = { day: '#F5EFE1', night: '#1B1E25' };
 
@@ -57,6 +59,20 @@ export interface Part {
   html: string;
 }
 
+/**
+ * Height the Today panel needs for today's list (frame §5.2 metrics): title, a chip row when
+ * there are all-day items, and the timeline rows (at least two). Undefined in the evening peek,
+ * when Tomorrow shares the panel and wants the full room.
+ */
+export function todayNeed(b: Board, now: number, ctx: BaseCtx): number | undefined {
+  if (ctx.peek) return undefined;
+  const bucket = bucketDay(b.events, ctx.today);
+  // What's left today, plus one "done earlier" line for anything finished (the panel folds those).
+  const left = bucket.timed.filter((e) => eventState(e, now) !== 'past').length;
+  const rows = left + (left < bucket.timed.length ? 1 : 0);
+  return 110 + (bucket.allDay.length ? 72 : 4) + Math.max(2, rows) * 76 + 6;
+}
+
 /** Which modules have something to show, where they go, and their HTML. */
 export function planBoard(b: Board, now: number, ctx: BaseCtx): { layout: Layout; parts: Part[] } {
   const active = new Set<SlotId>();
@@ -65,7 +81,10 @@ export function planBoard(b: Board, now: number, ctx: BaseCtx): { layout: Layout
     if (m.active && !m.active(b, now, ctx)) continue;
     active.add(m.id);
   }
-  const layout = planLayout(ctx.stage, active, { tvRows: active.has('tv') ? tvRowsWanted(b, now, ctx.today) : 0 });
+  const layout = planLayout(ctx.stage, active, {
+    tvRows: active.has('tv') ? tvRowsWanted(b, now, ctx.today) : 0,
+    todayNeed: active.has('today') ? todayNeed(b, now, ctx) : undefined,
+  });
   const parts: Part[] = [];
   for (const m of MODULES) {
     const box = layout[m.id];

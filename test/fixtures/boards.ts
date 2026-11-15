@@ -209,6 +209,7 @@ export const SCENARIOS: Record<string, Scenario> = {
   'tv-thursday': { now: '2026-11-12T19:45', updatedMinAgo: 4, weather: 'evening', kitchen: ['milk', 'eggs'], tv: 'thursday', note: 'Thursday night: TNF on Prime, NBA on now' },
   'tv-saturday': { now: '2026-11-14T12:40', updatedMinAgo: 3, weather: 'partly', kitchen: ['paper-towels', 'yogurt'], tv: 'saturday', note: 'Busy college football Saturday (capped at 8)' },
   'tv-sunday': { now: '2026-11-15T15:40', updatedMinAgo: 6, weather: 'cloudy', kitchen: ['chips', 'bananas', 'eggs', 'milk'], tv: 'sunday', note: 'Steelers Sunday with the early games on' },
+  'tv-quiet-sunday': { now: '2026-11-15T15:40', updatedMinAgo: 3, weather: 'cloudy', kitchen: ['milk'], sparse: true, tv: 'sunday', note: 'Steelers Sunday on a nearly empty calendar (like the real one)' },
   'tv-none': { now: '2026-11-10T18:30', updatedMinAgo: 2, weather: 'evening', kitchen: ['milk'], tv: 'quiet', note: 'Nothing on national TV: no card' },
 };
 

@@ -106,6 +106,21 @@ Updated Nov 6, 2026 (M2 built; "On TV tonight" card added). A fresh session shou
   real flow: not set up, unlock, wrong passphrase, stored key on reload, offline, stale, bad key,
   forget this device. (The JSONP fallback it also checked was removed on Nov 6.)
 
+## Live scores and a bigger TV card (Nov 15)
+
+- Zuk saw one TV line on a Steelers Sunday (the game tape plus Today's fixed 460 minimum left room
+  for one row). Today's minimum now follows what its list needs (360–460), the band can use four
+  rows, and up to four games get a full-width line each.
+- Script: `shapeGame_` reads scores and status; `gameClock_` words the clock ("Q3 8:24", "Half",
+  "End Q1", "OT 2:10", "Final/OT"); live and final games carry `awayScore`, `homeScore`, `clock`;
+  a ticked team's final stays for the day (`final: true`); the TV cache is 60 s while a game is on
+  or within 20 min of kickoff (`tvLiveCacheSeconds`). Needs a new script version (done from Chrome).
+- Fridge: scores next to the teams (leader in red), clock in red pen, finals in pencil without a
+  network; games on now are kept first when the band is full; polls every 2 min while a game is on.
+- The countdown card now needs the TV band to keep three rows, so on big sports days the tag shows.
+- New dev fixture `tv-quiet-sunday` (Steelers Sunday on a nearly empty calendar): 6 games shown.
+- Tests: 133.
+
 ## "On TV tonight" live (Nov 15)
 
 - Script Version 2 (TV) deployed from Chrome; the next deploy's check said `tv error espn_http_403`:

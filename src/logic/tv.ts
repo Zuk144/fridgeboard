@@ -12,24 +12,44 @@ const RUNS_MS: Record<TvLeague, number> = { nfl: 4 * 3600000, cfb: 4 * 3600000, 
 export function tvGamesNow(b: Board, now: number, today: DayKey): TvGame[] {
   const tv = b.tv;
   if (!tv || tv.error || !Array.isArray(tv.games)) return [];
-  return tv.games.filter((g) => now < g.start + (RUNS_MS[g.league] || RUNS_MS.nfl) && (g.day === today || now >= g.start));
+  return tv.games.filter((g) => {
+    // A final (the family's team) stays for the rest of its day.
+    if (g.final) return g.day === today;
+    return now < g.start + (RUNS_MS[g.league] || RUNS_MS.nfl) && (g.day === today || now >= g.start);
+  });
 }
 
 export function isOnNow(g: TvGame, now: number): boolean {
-  return g.live || now >= g.start;
+  return !g.final && (g.live || now >= g.start);
 }
 
-/** Rows the band would like: two games a row, or one row for the "didn't come through" note. */
+/** Any game on right now, so the fridge checks for new scores more often. */
+export function anyGameOn(b: Board, now: number, today: DayKey): boolean {
+  return tvGamesNow(b, now, today).some((g) => isOnNow(g, now));
+}
+
+export function hasScore(g: TvGame): boolean {
+  return typeof g.awayScore === 'number' && typeof g.homeScore === 'number';
+}
+
+/**
+ * Rows the band would like: up to four games get a full-width line each (room for the score and
+ * clock), more go two to a row; one row for the "didn't come through" note.
+ */
 export function tvRowsWanted(b: Board, now: number, today: DayKey): number {
   if (b.tv && b.tv.error) return 1;
-  return Math.ceil(Math.min(tvGamesNow(b, now, today).length, 8) / 2);
+  const n = Math.min(tvGamesNow(b, now, today).length, 8);
+  return n <= 4 ? n : Math.ceil(n / 2);
 }
 
-/** What fits in `slots`: the family's teams first, then by start time; shown in start order. */
-export function tvFit(games: TvGame[], slots: number): { shown: TvGame[]; cut: number } {
+/**
+ * What fits in `slots`: the family's teams first, then games on now, then by start time; shown
+ * in start order.
+ */
+export function tvFit(games: TvGame[], slots: number, now = 0): { shown: TvGame[]; cut: number } {
   if (games.length <= slots) return { shown: games, cut: 0 };
-  const fav = games.filter((g) => g.fav).slice(0, slots);
-  const keep = new Set<TvGame>(fav);
+  const keep = new Set<TvGame>(games.filter((g) => g.fav).slice(0, slots));
+  for (const g of games) if (keep.size < slots && now && isOnNow(g, now)) keep.add(g);
   for (const g of games) if (keep.size < slots) keep.add(g);
   return { shown: games.filter((g) => keep.has(g)), cut: games.length - keep.size };
 }

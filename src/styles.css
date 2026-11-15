@@ -334,6 +334,10 @@ body {
 .tv-dot { flex: none; color: var(--pencil); margin: 0 6px; }
 .tv-time { flex: none; }
 .tv-live { flex: none; color: var(--red); font-size: 33px; line-height: 30px; }
+.tv-sc { font-weight: 700; margin-left: 2px; }
+.tv-sc.lead { color: var(--red); }
+.tv-fav .tv-sc.lead { color: inherit; text-decoration: underline; text-underline-offset: 4px; }
+.tv-final { flex: none; color: var(--pencil); font-size: 33px; line-height: 30px; }
 .tv-net { flex: 0 40 auto; min-width: 60px; overflow: hidden; text-overflow: ellipsis; color: var(--pencil); font-size: 25px; }
 
 /* ------------------------------------------------------------ We're out notepad */
