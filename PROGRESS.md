@@ -106,6 +106,16 @@ Updated Nov 6, 2026 (M2 built; "On TV tonight" card added). A fresh session shou
   real flow: not set up, unlock, wrong passphrase, stored key on reload, offline, stale, bad key,
   forget this device. (The JSONP fallback it also checked was removed on Nov 6.)
 
+## Holiday countdown card (Nov 15)
+
+- `src/modules/countdown.ts` + `holidayCard()` in `src/logic/holidays.ts`: the countdown grew from
+  the small tag into a full-width kraft card between Today and This Week (frame §5.5). 108 units tall.
+- Layout: the card comes before the TV band; the band keeps at least two rows (or what it had),
+  else the card steps aside and the tag next to "Today" shows. Checked at 720x1229 (DPR 1.5):
+  `busy`, `tv-saturday` (card + 2 TV rows), `thanksgiving` ("2 days to Thanksgiving").
+- Tests: 126 passing (holidayCard logic, card position, tomorrow/day-of wording, TV sharing, game
+  day fallback, shorter screens).
+
 ## Setup status (Nov 5)
 
 Done by Zuk (with Claude in Chrome on the laptop):

@@ -8,7 +8,7 @@ import { countdownText, eventState, pickNextUp, planTimeline } from '../src/logi
 import { gameState, kickoffText, pickGame } from '../src/logic/game';
 import { burnInShift, isNight, isPeek, nightLookahead } from '../src/logic/modes';
 import { awayArrowText, awayBanner, awayOn, awaySpan, backText, partOfDay } from '../src/logic/away';
-import { holidayCountdown, majorName } from '../src/logic/holidays';
+import { holidayCard, holidayCountdown, majorName } from '../src/logic/holidays';
 import { agoText, freshness, whenText } from '../src/logic/freshness';
 import { contrast, readableInk } from '../src/logic/ink';
 
@@ -244,6 +244,14 @@ describe('holidays', () => {
     expect(holidayCountdown([hol('Veterans Day', '2026-11-11')], '2026-11-09')).toBeNull();
     expect(majorName("New Year's Day")).toBe("New Year's");
     expect(majorName('Christmas Eve')).toBeNull();
+  });
+
+  it('picks the countdown card holiday, the day itself included', () => {
+    const events = [hol('Veterans Day', '2026-11-11'), hol('Thanksgiving Day', '2026-11-26'), hol('Christmas Day', '2026-12-25')];
+    expect(holidayCard(events, '2026-11-15')).toEqual({ name: 'Thanksgiving', days: 11, day: '2026-11-26' });
+    expect(holidayCard(events, '2026-11-26')).toMatchObject({ name: 'Thanksgiving', days: 0 });
+    expect(holidayCard(events, '2026-11-27')).toMatchObject({ name: 'Christmas', days: 28 });
+    expect(holidayCard([hol('Veterans Day', '2026-11-11')], '2026-11-09')).toBeNull();
   });
 });
 

@@ -47,7 +47,7 @@ export function stageFor(vw: number, vh: number): Stage {
   return { W, H, scale, offX, offY };
 }
 
-export type SlotId = 'stale' | 'header' | 'game' | 'away' | 'today' | 'nextup' | 'week' | 'tv' | 'weather' | 'kitchen';
+export type SlotId = 'stale' | 'header' | 'game' | 'away' | 'today' | 'nextup' | 'week' | 'countdown' | 'tv' | 'weather' | 'kitchen';
 
 export type Layout = Partial<Record<SlotId, Box>>;
 
@@ -59,6 +59,9 @@ const TV_PAD = 14;
 export const TODAY_MIN = 460;
 /** With the calendar on, the band shows at most this many rows (six games) and "+N more". */
 const TV_MAX_ROWS = 3;
+
+/** Holiday countdown card: a kraft-paper strip between Today and This Week. */
+export const COUNTDOWN_H = 108;
 
 export function tvBandHeight(rows: number): number {
   return TV_HEAD + rows * TV_ROW + TV_PAD;
@@ -113,10 +116,21 @@ export function planLayout(stage: Pick<Stage, 'W' | 'H'>, on: Set<SlotId>, opts:
     if (hasK) L.kitchen = { x: hasW ? 700 : W - 380, y: bottomY, w: 380, h: bottomH - 10 };
   }
   const weekH = on.has('week') ? 420 : 0;
+  // TV rows that fit above Today's minimum, with `cd` units already given to the countdown card.
+  const tvRowsWith = (cd: number) =>
+    Math.min(tvWant, TV_MAX_ROWS, Math.floor((bottomY - weekH - y - cd - TODAY_MIN - TV_HEAD - TV_PAD) / TV_ROW));
+  // The countdown card shows only while Today keeps TODAY_MIN. It may cost the TV band rows, but
+  // never below two (or below what the band had, if that was less), so it never pushes the games
+  // off the page; then the small tag next to "Today" carries the countdown instead.
+  let cdH = on.has('countdown') ? COUNTDOWN_H : 0;
+  if (cdH && bottomY - weekH - y - cdH < TODAY_MIN) cdH = 0;
+  if (cdH && tvWant) {
+    const before = Math.max(0, tvRowsWith(0));
+    if (before >= 1 && tvRowsWith(cdH) < Math.min(before, 2)) cdH = 0;
+  }
   // The TV band goes under This Week and takes its room from Today, down to TODAY_MIN.
   if (tvWant) {
-    const room = bottomY - weekH - y - TODAY_MIN;
-    const rows = Math.min(tvWant, TV_MAX_ROWS, Math.floor((room - TV_HEAD - TV_PAD) / TV_ROW));
+    const rows = tvRowsWith(cdH);
     if (rows >= 1) {
       const h = tvBandHeight(rows);
       bottomY -= h;
@@ -128,7 +142,12 @@ export function planLayout(stage: Pick<Stage, 'W' | 'H'>, on: Set<SlotId>, opts:
     weekTop = bottomY - weekH;
     L.week = { x: 0, y: weekTop, w: W, h: weekH };
   }
-  L.today = { x: 0, y, w: W, h: weekTop - y };
+  let todayBottom = weekTop;
+  if (cdH) {
+    todayBottom = weekTop - cdH;
+    L.countdown = { x: 0, y: todayBottom, w: W, h: cdH };
+  }
+  L.today = { x: 0, y, w: W, h: todayBottom - y };
   if (on.has('nextup')) {
     L.nextup = { x: 690, y: y + 26, w: 350, h: Math.min(392, L.today.h - 44) };
   }

@@ -19,8 +19,10 @@ import { parseConfig } from '../scripts/config';
 
 const FRIDGE = stageFor(720, 1229);
 
-function render(name: string, opts: { toggles?: Toggles; stage?: ReturnType<typeof stageFor>; now?: number } = {}) {
+function render(name: string, opts: { toggles?: Toggles; stage?: ReturnType<typeof stageFor>; now?: number; noHolidays?: boolean } = {}) {
   const f = makeFixture(name)!;
+  // Leaves out the holiday countdown card, for tests about how the other bands share the page.
+  if (opts.noHolidays) f.board.events = f.board.events.filter((e) => e.kind !== 'holidays');
   const now = opts.now ?? f.now;
   const ctx = buildCtx(f.board, now, { stage: opts.stage || FRIDGE, toggles: opts.toggles || DEFAULT_TOGGLES, offline: f.offline, problem: '' });
   const plan = planBoard(f.board, now, ctx);
@@ -47,7 +49,7 @@ describe('stage', () => {
 });
 
 describe('layout', () => {
-  const all: SlotId[] = ['stale', 'header', 'game', 'away', 'today', 'nextup', 'week', 'tv', 'weather', 'kitchen'];
+  const all: SlotId[] = ['stale', 'header', 'game', 'away', 'today', 'nextup', 'countdown', 'week', 'tv', 'weather', 'kitchen'];
 
   for (const stage of [FRIDGE, stageFor(720, 1280), stageFor(820, 1000)]) {
     it(`keeps every box on the page and apart (${stage.W}x${stage.H})`, () => {
@@ -171,7 +173,8 @@ describe('every fixture renders', () => {
 
   it('turning modules off reflows the page', () => {
     const r = render('gameday', { toggles: togglesFrom({ modules: { weather: false, kitchen: false, week: false } }) });
-    expect(r.ids).toEqual(['header', 'game', 'today', 'nextup']);
+    // With This Week off there's room for the Thanksgiving card too.
+    expect(r.ids).toEqual(['header', 'game', 'today', 'countdown', 'nextup']);
     expect(r.html).not.toContain('Next 12 hours');
     expect(r.html).not.toContain('Jacket weather');
     const cal = render('gameday', { toggles: togglesFrom({ modules: { calendar: false } }) });
@@ -208,24 +211,26 @@ describe('On TV tonight', () => {
   it('never squeezes Today below its minimum; it shows fewer games and "+N more"', () => {
     for (const name of ['tv-thursday', 'tv-saturday', 'tv-sunday']) {
       for (const stage of [FRIDGE, stageFor(720, 1280)]) {
-        const r = render(name, { stage });
-        expect(r.plan.layout.today!.h, `${name} ${stage.H}`).toBeGreaterThanOrEqual(TODAY_MIN);
+        for (const noHolidays of [false, true]) {
+          const r = render(name, { stage, noHolidays });
+          expect(r.plan.layout.today!.h, `${name} ${stage.H}`).toBeGreaterThanOrEqual(TODAY_MIN);
+        }
       }
     }
-    const sat = render('tv-saturday');
+    const sat = render('tv-saturday', { noHolidays: true });
     expect(sat.plan.layout.tv!.h).toBeLessThanOrEqual(58 + 3 * 48 + 14);
     expect(sat.html).toContain('+5 more on TV'); // 8 sent, 6 fit, plus 3 the script left out
     // Game day at 1229: one row, and the Steelers game is one of the two.
-    const sun = render('tv-sunday');
+    const sun = render('tv-sunday', { noHolidays: true });
     const tv = sun.plan.parts.find((p) => p.id === 'tv')!.html;
     expect(tv).toContain('Steelers @ Bengals');
     expect(tv).toMatch(/tv-match tv-fav" style="background:#FFB612;color:#101820">Steelers @ Bengals/);
     expect(tv).toContain('+8 more on TV');
-    expect(render('tv-sunday', { stage: stageFor(720, 1280) }).plan.layout.tv!.h).toBeGreaterThan(sun.plan.layout.tv!.h);
+    expect(render('tv-sunday', { stage: stageFor(720, 1280), noHolidays: true }).plan.layout.tv!.h).toBeGreaterThan(sun.plan.layout.tv!.h);
   });
 
   it('writes college ranks and shows the first network when two columns are tight', () => {
-    const tv = render('tv-saturday').plan.parts.find((p) => p.id === 'tv')!.html;
+    const tv = render('tv-saturday', { noHolidays: true }).plan.parts.find((p) => p.id === 'tv')!.html;
     expect(tv).toContain('<span class="tv-rank">#9</span>Penn State @ <span class="tv-rank">#3</span>Michigan');
     expect(tv).toMatch(/Michigan<\/span>.*3:30.*<span class="tv-net">ABC<\/span>/);
     expect(tv).toContain('On TV today');
@@ -336,5 +341,55 @@ describe('script replies', () => {
     }
     expect(() => checkBoard({ ok: true, schemaVersion: 1 })).toThrow(ApiProblem);
     expect(() => checkBoard('nope')).toThrow(ApiProblem);
+  });
+});
+
+describe('holiday countdown card', () => {
+  it('sits between Today and This Week and replaces the small tag', () => {
+    const r = render('busy');
+    const L = r.plan.layout;
+    expect(r.ids).toContain('countdown');
+    expect(L.countdown!.y).toBe(L.today!.y + L.today!.h);
+    expect(L.countdown!.y + L.countdown!.h).toBe(L.week!.y);
+    const card = r.plan.parts.find((p) => p.id === 'countdown')!.html;
+    expect(card).toContain('<span class="cd-num">12</span><span class="cd-words">days to Thanksgiving</span>');
+    expect(card).toContain('Thursday, Nov 26');
+    expect(card).toContain('data-day="2026-11-26"');
+    expect(r.html).not.toContain('class="kraft"');
+  });
+
+  it('says tomorrow the day before and Happy Thanksgiving on the day', () => {
+    const f = makeFixture('thanksgiving')!;
+    const card = (now: number) => render('thanksgiving', { now }).plan.parts.find((p) => p.id === 'countdown')?.html || '';
+    expect(card(f.now)).toContain('<span class="cd-num">2</span>');
+    expect(card(f.now + 86400000)).toContain('Thanksgiving is tomorrow!');
+    expect(card(f.now + 2 * 86400000)).toContain('Happy Thanksgiving!');
+  });
+
+  it('shares the page with the TV band, which keeps two rows', () => {
+    const r = render('tv-saturday');
+    expect(r.ids).toContain('countdown');
+    expect(r.plan.layout.tv!.h).toBe(58 + 2 * 48 + 14);
+    expect(r.plan.layout.today!.h).toBeGreaterThanOrEqual(TODAY_MIN);
+  });
+
+  it('never pushes the TV band off a shorter screen', () => {
+    for (const stage of [stageFor(820, 1000), stageFor(720, 1143)]) {
+      const r = render('tv-saturday', { stage });
+      const without = render('tv-saturday', { stage, noHolidays: true });
+      expect(r.ids.includes('tv'), `${stage.H}`).toBe(without.ids.includes('tv'));
+      if (!r.ids.includes('countdown')) expect(r.html).toContain('12 days to Thanksgiving');
+    }
+  });
+
+  it('gives way on a game day and the tag next to Today carries the countdown', () => {
+    const r = render('gameday');
+    expect(r.ids).not.toContain('countdown');
+    expect(r.html).toContain('11 days to Thanksgiving');
+  });
+
+  it('is not there with no major holiday in the window', () => {
+    expect(render('empty').ids).not.toContain('countdown');
+    expect(render('busy', { toggles: togglesFrom({ modules: { calendar: false } }) }).ids).not.toContain('countdown');
   });
 });

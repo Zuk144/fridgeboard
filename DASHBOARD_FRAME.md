@@ -187,7 +187,8 @@ Each calendar in config gets a `kind` that changes how it renders:
   - The feed marks games as "free" time. Never count them as busy or as conflicts.
 - **`holidays`:** all-day chips at the top of Today and the week strip.
   - A `hideObservances` option (default **true**) drops observance-only entries like "Black Friday" and keeps public holidays. Google labels these in the event description ("Public holiday" vs "Observance").
-  - The next major holiday (Thanksgiving, Christmas, New Year's, Easter, the Fourth, Halloween, Mother's/Father's Day) shows a kraft-paper tag next to "Today": "11 days to Thanksgiving", "Thanksgiving is tomorrow". It only reaches as far as the board's window (`daysAhead`, 14 days).
+  - The next major holiday (Thanksgiving, Christmas, New Year's, Easter, the Fourth, Halloween, Mother's/Father's Day) gets a **countdown card**: a full-width kraft-paper strip between Today and This Week, "11 days to Thanksgiving" with the number in red pen and the date in pencil, "Thanksgiving is tomorrow!" the day before, "Happy Thanksgiving!" on the day. Tapping it opens that day. It only reaches as far as the board's window (`daysAhead`, 14 days).
+  - The card shows only while Today keeps its minimum height, and it may cost the TV band rows but never below two (or below what the band had). When it doesn't fit (a game day, a short screen), the small kraft tag next to "Today" carries the countdown instead.
 - **Collisions are features:** Broncos @ Steelers on Fri Nov 27, the day after Thanksgiving, should read as one fun day, not a cluttered one.
 
 Reference data at time of writing (for fixtures, not hardcoding): Steelers @ Bengals Sun Nov 15 8:20 pm, Steelers @ Eagles Sun Nov 22 4:25 pm, Broncos @ Steelers Fri Nov 27 3:00 pm; Veterans Day Nov 11, Thanksgiving Nov 26.

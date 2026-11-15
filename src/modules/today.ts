@@ -120,7 +120,8 @@ export const todayModule: DashModule = {
   needs: ['calendar'],
   render(board, now, ctx) {
     const m = PORTRAIT;
-    const cd = holidayCountdown(board.events, ctx.today);
+    // The countdown card says it bigger when it fits; otherwise the tag next to the title does.
+    const cd = ctx.layout.countdown ? null : holidayCountdown(board.events, ctx.today);
     const tag = cd ? `<span class="kraft-hole"></span>${esc(cd.text)}` : '';
     const H = ctx.box.h;
     if (!ctx.peek) {

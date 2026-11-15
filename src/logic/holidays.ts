@@ -38,3 +38,25 @@ export function holidayCountdown(events: BoardEvent[], today: DayKey): HolidayCo
   const days = daysBetween(today, best.e.day);
   return { name: best.name, days, text: days === 1 ? `${best.name} is tomorrow` : `${days} days to ${best.name}` };
 }
+
+export interface HolidayCard {
+  name: string;
+  /** 0 on the day itself. */
+  days: number;
+  day: DayKey;
+}
+
+/**
+ * The big countdown card: the nearest major holiday from today on (today included, so the day
+ * itself says "Happy Thanksgiving!"), within the board's window.
+ */
+export function holidayCard(events: BoardEvent[], today: DayKey): HolidayCard | null {
+  let best: { e: BoardEvent; name: string } | null = null;
+  for (const e of events) {
+    if (e.kind !== 'holidays' || e.day < today) continue;
+    const name = majorName(e.title);
+    if (name && (!best || e.day < best.e.day)) best = { e, name };
+  }
+  if (!best) return null;
+  return { name: best.name, days: daysBetween(today, best.e.day), day: best.e.day };
+}
