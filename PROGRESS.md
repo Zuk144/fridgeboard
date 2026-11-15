@@ -119,7 +119,10 @@ Updated Nov 6, 2026 (M2 built; "On TV tonight" card added). A fresh session shou
   network; games on now are kept first when the band is full; polls every 2 min while a game is on.
 - The countdown card now needs the TV band to keep three rows, so on big sports days the tag shows.
 - New dev fixture `tv-quiet-sunday` (Steelers Sunday on a nearly empty calendar): 6 games shown.
-- Tests: 133.
+- Same day, from Zuk: Next Up skips the game the game-day tape already counts down to (shows the
+  next other thing, or the coming-up card), and the tape leads with "4h 40m to kickoff".
+- script-check now adds "(N with live score)" to the TV count (counts only).
+- Tests: 134.
 
 ## "On TV tonight" live (Nov 15)
 

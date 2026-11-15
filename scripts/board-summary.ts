@@ -31,5 +31,6 @@ export function tvSummary(b: Board): string {
   if (tv.error) return `tv error ${tv.error}`;
   const n = (tv.games || []).length + (tv.more || 0);
   const failed = tv.failed && tv.failed.length ? ` (${tv.failed.join(', ')} failed)` : '';
-  return `${n} game${n === 1 ? '' : 's'} on TV${failed}`;
+  const scored = (tv.games || []).filter((g) => typeof g.awayScore === 'number' && g.clock).length;
+  return `${n} game${n === 1 ? '' : 's'} on TV${scored ? ` (${scored} with live score)` : ''}${failed}`;
 }

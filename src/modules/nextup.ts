@@ -1,5 +1,6 @@
 /**
- * Next Up: a tilted yellow sticky with the countdown in red pen, for the next thing today.
+ * Next Up: a tilted yellow sticky with the countdown in red pen, for the next thing today. A game
+ * the game-day tape is already counting down to is left to the tape.
  * When nothing is left today the sticky goes away; on an empty day a pale "coming up" index card
  * shows the next thing on the calendar instead, so the page never looks abandoned.
  */
@@ -7,11 +8,20 @@ import type { Board, BoardEvent } from '../../shared/payload';
 import type { BaseCtx, DashModule } from './types';
 import { bucketDay, firstAfter } from '../logic/days';
 import { countdownText, pickNextUp } from '../logic/nextup';
+import { pickGame } from '../logic/game';
 import { DOW_LONG, daysBetween, dowOf } from '../logic/time';
 import { esc } from '../ui/html';
 
+/** The game the game-day tape is already counting down to; Next Up leaves it to the tape. */
+function onTape(board: Board, now: number, ctx: BaseCtx): BoardEvent | null {
+  if (!ctx.toggles.gameday) return null;
+  const g = pickGame(board.events, ctx.today, now);
+  return g ? g.e : null;
+}
+
 function nextToday(board: Board, now: number, ctx: BaseCtx): BoardEvent | null {
-  return pickNextUp(bucketDay(board.events, ctx.today).timed, now);
+  const tape = onTape(board, now, ctx);
+  return pickNextUp(bucketDay(board.events, ctx.today).timed.filter((e) => e !== tape), now);
 }
 
 function comingUp(board: Board, ctx: BaseCtx): BoardEvent | null {

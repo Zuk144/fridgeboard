@@ -25,7 +25,7 @@ describe('script-check summary', () => {
     const board = h.fn('board_', {}, at('2026-11-15T15:40').getTime()) as Board;
     const s = summarizeBoard(board, 1);
     expect(s.ok).toBe(true);
-    expect(s.line).toBe('schema 1 · 1 calendars · 1 events · 1 trips · weather ok · 10 games on TV · list 0 needed');
+    expect(s.line).toBe('schema 1 · 1 calendars · 1 events · 1 trips · weather ok · 10 games on TV (4 with live score) · list 0 needed');
     for (const word of ['Secret', 'surprise', 'Denver', 'Flight', 'Me', 'example', 'Steelers', 'NBC']) expect(s.line).not.toContain(word);
   });
 

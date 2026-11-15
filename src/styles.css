@@ -174,6 +174,7 @@ body {
 .tape-when { font-size: 54px; line-height: 56px; white-space: nowrap; }
 .tape-on .tape-when { font-size: 62px; line-height: 60px; }
 .tape-sub { font-size: 30px; line-height: 38px; white-space: nowrap; }
+.tape-to { font-size: 32px; margin-left: 4px; }
 .late-tag { display: inline-block; font-size: 21px; line-height: 30px; padding: 0 10px; border-radius: 5px; letter-spacing: 2px; vertical-align: 3px; margin-left: 10px; }
 
 /* ------------------------------------------------------------ Dad's away note */

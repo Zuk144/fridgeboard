@@ -117,13 +117,32 @@ describe('every fixture renders', () => {
     const r = render('gameday');
     // Today's list is short, so the Thanksgiving card fits under it even with the game tape.
     expect(r.ids).toEqual(['header', 'game', 'today', 'countdown', 'week', 'weather', 'kitchen', 'nextup']);
-    expect(r.html).toContain('8:20 tonight');
-    expect(r.html).toContain('in 4h 40m');
-    expect(r.html).toContain('LATE GAME');
+    const tape = r.plan.parts.find((p) => p.id === 'game')!.html;
+    expect(tape).toContain('<div class="hand tape-when">4h 40m<span class="tape-to"> to kickoff</span></div>');
+    expect(tape).toContain('<div class="tape-sub">8:20 tonight');
+    expect(tape).toContain('LATE GAME');
     expect(r.html).toContain('<span class="cd-num">11</span><span class="cd-words">days to Thanksgiving</span>');
     expect(r.html).toContain('in 50 min');
     expect(r.html).toContain('Jacket weather');
     expect(r.html).toContain('updated 6 min ago');
+  });
+
+  it('leaves the game to the tape: Next Up shows the next other thing, or the coming-up card', () => {
+    const r = render('gameday');
+    const sticky = r.plan.parts.find((p) => p.id === 'nextup')!.html;
+    expect(sticky).toContain('Piano lesson');
+    expect(sticky).not.toContain('Steelers');
+    // Nothing else left today: the sticky gives way to the coming-up card, never the game.
+    const f = makeFixture('tv-quiet-sunday')!;
+    const ctx = buildCtx(f.board, f.now, { stage: FRIDGE, toggles: DEFAULT_TOGGLES, offline: false, problem: '' });
+    const quiet = planBoard(f.board, f.now, ctx).parts.find((p) => p.id === 'nextup');
+    expect(quiet?.html || '').not.toContain('next up');
+    expect(quiet!.html).toContain('coming up');
+    expect(quiet!.html).toContain('Steelers @ Eagles'); // next week's game, not today's
+    expect(quiet!.html).not.toContain('Bengals');
+    // With the game-day tape switched off, Next Up counts down to the game itself.
+    const off = render('tv-quiet-sunday', { toggles: togglesFrom({ modules: { gameday: false } }) });
+    expect(off.plan.parts.find((p) => p.id === 'nextup')!.html).toContain('Steelers');
   });
 
   it('during the game the tape reads Game on', () => {
